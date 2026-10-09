@@ -143,22 +143,24 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 
 ## Criteri di completamento 0.1 Alpha
 
-| # | Criterio | Stato |
-|---|---|---|
-| 1 | La GUI si avvia | [x] |
-| 2 | L'analisi funziona | [x] |
-| 3 | I risultati sono visualizzati correttamente | [x] |
-| 4 | La selezione degli elementi funziona | [x] |
-| 5 | La pulizia richiede conferma esplicita | [x] |
-| 6 | I percorsi esterni vengono rifiutati | [x] |
-| 7 | Gli errori non provocano crash non gestiti | [x] |
-| 8 | La reportistica funziona | [x] |
-| 9 | La suite di test obbligatori passa | [x] |
-| 10 | La build Release viene generata | [x] |
-| 11 | L'eseguibile viene avviato e verificato | [x] |
-| 12 | La documentazione descrive il prodotto | [x] |
-| 13 | Nessun bug bloccante noto non dichiarato | [x] — vedi "Bug noti" |
-| 14 | `TASKS.md` riporta il risultato reale di ogni criterio | [x] |
+| # | Criterio | Stato | Evidenza |
+|---|---|---|---|
+| 1 | La GUI si avvia | [x] | `verify.ps1`: finestra creata, titolo letto |
+| 2 | L'analisi funziona | [x] | `verify.ps1`: stato "Analisi completata." + riepilogo letto |
+| 3 | I risultati sono visualizzati correttamente | [x] | `verify.ps1`: righe in tabella (3103) = "Proposti" del riepilogo (3103) |
+| 4 | La selezione degli elementi funziona | [x]* | `verify.ps1`: pulsante pulizia **disabilitato** senza selezione e **abilitato** dopo l'analisi. Il clic sulla singola checkbox **non** è automatabile: la griglia WinForms non espone le righe come elementi UIA |
+| 5 | La pulizia richiede conferma esplicita | [x]* | Dialogo di conferma con numero/byte e default **No**; **non eseguito in automatico** per non cancellare i file temporanei reali dell'utente. Il motore di cancellazione è coperto da `CleanerTests` su fixture dedicati |
+| 6 | I percorsi esterni vengono rifiutati | [x] | `PathSafetyTests` (containment, `..`, reparse, radice) |
+| 7 | Gli errori non provocano crash non gestiti | [x] | `ScannerTests`/`CleanerTests` (ACL negata, file bloccato, cartella inesistente) |
+| 8 | La reportistica funziona | [x] | `ReportTests` + `verify.ps1` (file creato, contenuto conforme, percorso mostrato in GUI) |
+| 9 | La suite di test obbligatori passa | [x] | **63/63** su 3 esecuzioni consecutive |
+| 10 | La build Release viene generata | [x] | `artifacts/alpha-0.1/` + `SHA256SUMS.txt` ricalcolato e riverificato |
+| 11 | L'eseguibile viene avviato e verificato | [x] | `verify.ps1` **31/31** |
+| 12 | La documentazione descrive il prodotto | [x] | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
+| 13 | Nessun bug bloccante noto non dichiarato | [x] | vedi "Bug noti e limiti dichiarati" |
+| 14 | `TASKS.md` riporta il risultato reale di ogni criterio | [x] | Tabella con evidenza per riga |
+
+`[x]*` = criterio soddisfatto, con una parte non automatizzabile dichiarata nel seguito.
 
 ---
 
@@ -181,6 +183,14 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
    dal codice; la cosa è verificata da test automatici sulle sorgenti.
 5. `tests/verify.ps1` usa `BM_CLICK` sull'handle del controllo perché WinForms su .NET
    Framework espone i controlli tramite il bridge MSAA e non offre `InvokePattern`.
+6. **Nessuna pulizia automatizzata contro il vero `%TEMP%`**: la verifica end-to-end esegue
+   soltanto l'analisi. Avviare in automatico la cancellazione sui file temporanei reali
+   dell'utente eliminerebbe dati dell'utente durante un test, quindi il flusso di conferma è
+   dichiarato ma non automatizzato; il motore di cancellazione è invece esercitato a fondo
+   dall'unità di test su fixture create apposta.
+7. **Selezione riga per riga non automatabile**: la griglia WinForms non espone le righe come
+   elementi di automazione, quindi il clic su una singola checkbox non è coperto dalla verifica
+   end-to-end.
 
 ## Riepilogo finale (stato reale)
 

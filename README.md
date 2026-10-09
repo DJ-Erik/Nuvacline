@@ -55,6 +55,11 @@ dell'utente corrente che sono più vecchi di 24 ore.
    È un dettaglio del fixture di test, non dell'applicazione.
 6. **Nessun .NET SDK in ambiente**: la compilazione usa `csc.exe` in-box di .NET Framework
    (C# 5), non il SDK .NET. Conseguenza: niente xUnit (c'è un runner di test equivalente).
+7. **La verifica end-to-end esegue solo l'analisi**, mai una pulizia reale sul `%TEMP%`:
+   automatizzare la cancellazione eliminerebbe file dell'utente durante un test. Il motore di
+   cancellazione e il suo percorso di conferma sono esercitati dai test su fixture dedicati.
+8. **La selezione della singola riga non è automatabile**: la griglia WinForms non espone le
+   righe come elementi di automazione.
 
 ## Struttura del repository
 
