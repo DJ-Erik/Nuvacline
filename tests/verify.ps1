@@ -208,6 +208,15 @@ $statusId = $statusEl.Current.AutomationId
 $summaryId = $summaryEl.Current.AutomationId
 $reportId = $reportEl.Current.AutomationId
 
+# Stato iniziale: elenco vuoto e pulsante di pulizia disabilitato.
+$gridEl = Find-ByName $mainWin 'Nessun elemento in elenco'
+Check ($null -ne $gridEl) 'La tabella iniziale dichiara "Nessun elemento in elenco"'
+$btnCleanEl = Find-ByName $mainWin 'Pulisci selezionati'
+Check ($null -ne $btnCleanEl) 'Il pulsante "Pulisci selezionati" è presente'
+if ($null -ne $btnCleanEl) {
+    Check (-not $btnCleanEl.Current.IsEnabled) 'Prima dell''analisi la pulizia è disabilitata (nessuna selezione)'
+}
+
 $dialogLog = New-Object System.Collections.ArrayList
 $mainHandle = $mainWin.Current.NativeWindowHandle
 
@@ -225,21 +234,22 @@ $netHits = 0
 # Campionamento delle connessioni TCP in uscita in un job in parallelo, cosi' da coprire
 # anche le operazioni che terminano in meno di un secondo.
 $netJob = Start-Job -ScriptBlock {
-    param($processId, $durationSeconds)
+    param($processId, $durationSeconds, $minSamples)
     $samples = 0
     $hits = 0
     $deadline = (Get-Date).AddSeconds($durationSeconds)
-    while ((Get-Date) -lt $deadline) {
+    $hardStop = (Get-Date).AddSeconds($durationSeconds + 60)
+    while (((Get-Date) -lt $deadline) -or (($samples -lt $minSamples) -and (Get-Date) -lt $hardStop)) {
         $samples++
         try {
             $conns = @(Get-NetTCPConnection -OwningProcess $processId -ErrorAction SilentlyContinue |
                 Where-Object { $_.State -eq 'Established' -and $_.RemoteAddress -notin @('0.0.0.0', '::', '127.0.0.1', '::1') })
             if ($conns.Count -gt 0) { $hits += $conns.Count }
         } catch { }
-        Start-Sleep -Milliseconds 100
+        Start-Sleep -Milliseconds 50
     }
     New-Object PSObject -Property @{ Samples = $samples; Hits = $hits }
-} -ArgumentList $proc.Id, 60
+} -ArgumentList $proc.Id, 45, 40
 
 Invoke-Button $btnAnalyze
 
@@ -267,6 +277,26 @@ for ($i = 0; $i -lt 10; $i++) {
 $summary = Find-ById $mainWin $summaryId
 $summaryText = if ($null -ne $summary) { $summary.Current.Name } else { '' }
 Check ($summaryText -like 'File analizzati:*') ('Riepilogo letto: ' + $summaryText)
+
+# La tabella deve dichiarare lo stesso numero di elementi proposti dal riepilogo.
+$gridAfter = $null
+foreach ($e in (Get-Descendants $mainWin)) {
+    if ($e.Current.Name -like '*elementi in elenco') { $gridAfter = $e; break }
+}
+Check ($null -ne $gridAfter) ('La tabella dichiara il contenuto: ' +
+    $(if ($null -ne $gridAfter) { $gridAfter.Current.Name } else { '(assente)' }))
+
+$proposed = -1
+if ($summaryText -match 'Proposti:\s*([0-9]+)') { $proposed = [int]$Matches[1] }
+$listed = -1
+if ($null -ne $gridAfter -and $gridAfter.Current.Name -match '^([0-9]+) elementi in elenco') { $listed = [int]$Matches[1] }
+Check ($proposed -ge 0 -and $listed -eq $proposed) `
+    ('Gli elementi mostrati coincidono con quelli proposti (' + $listed + ' vs ' + $proposed + ')')
+
+$btnCleanAfter = Find-ByName $mainWin 'Pulisci selezionati'
+if ($null -ne $btnCleanAfter) {
+    Check ($btnCleanAfter.Current.IsEnabled) 'Dopo l''analisi la pulizia è abilitata (ci sono selezioni)'
+}
 
 $reportLabel = Find-ById $mainWin $reportId
 $reportText = if ($null -ne $reportLabel) { $reportLabel.Current.Name } else { '' }
@@ -335,6 +365,7 @@ try {
 } catch { }
 Check ($runEntries.Count -eq 0) 'Nessuna voce di avvio automatico creata'
 
+Check ($netSamples -ge 40) ('Numero di campionamenti di rete sufficiente (' + $netSamples + ')')
 Check ($netHits -eq 0) ('Nessuna connessione TCP in uscita durante l''esecuzione (campionamenti: ' + $netSamples + ')')
 
 # -------------------------------------------------------------------- esito ---

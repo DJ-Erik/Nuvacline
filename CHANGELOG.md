@@ -35,7 +35,7 @@ Prima versione alpha, portatile e offline.
 - **Verifica end-to-end** `tests\verify.ps1`: avvia l'eseguibile reale, preme *Analizza*
   tramite automazione, legge stato, riepilogo e percorso del report, controlla la chiusura del
   processo, l'assenza di connessioni TCP in uscita e l'invariabilità di registro, servizi,
-  attività pianificate e avvio automatico. **24 controlli**.
+  attività pianificate e avvio automatico. **31 controlli**.
 - **Documentazione**: `README.md`, `SECURITY.md`, `PRIVACY.md`, `TASKS.md`.
 
 ### Dettagli tecnici

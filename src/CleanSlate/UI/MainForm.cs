@@ -131,6 +131,8 @@ namespace CleanSlate.UI
 
             _grid = new DataGridView();
             _grid.Name = "gridResults";
+            _grid.AccessibleName = "Nessun elemento in elenco";
+            _grid.Text = "Nessun elemento in elenco";
             _grid.Location = new Point(14, 222);
             _grid.Size = new Size(ClientSize.Width - 28, ClientSize.Height - 222 - 46);
             _grid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -439,7 +441,25 @@ namespace CleanSlate.UI
             finally
             {
                 _loadingGrid = false;
+                UpdateGridAccessibleName();
             }
+        }
+
+        /// <summary>
+        /// Rende il contenuto della tabella leggibile anche dai lettori di schermo e dagli
+        /// strumenti di automazione, che sulla griglia WinForms non vedono le righe.
+        /// </summary>
+        private void UpdateGridAccessibleName()
+        {
+            int count = _grid.Rows.Count;
+            string text = count == 0
+                ? "Nessun elemento in elenco"
+                : count.ToString(CultureInfo.InvariantCulture) + " elementi in elenco";
+            _grid.AccessibleName = text;
+            // La griglia WinForms espone i controlli tramite il bridge MSAA, che legge la
+            // didascalia della finestra: senza questo assegnamento il contenuto non risulta
+            // leggibile ne' dai lettori di schermo ne' dagli strumenti di automazione.
+            _grid.Text = text;
         }
 
         #endregion
@@ -578,6 +598,7 @@ namespace CleanSlate.UI
             {
                 _loadingGrid = false;
             }
+            UpdateGridAccessibleName();
             UpdateSelectionState();
         }
 

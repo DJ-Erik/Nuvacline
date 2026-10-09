@@ -52,7 +52,7 @@ Eseguita sull'eseguibile Release reale, con analisi della vera cartella temporan
 
 | Controllo | Esito |
 |---|---|
-| Connessioni TCP in uscita del processo durante l'analisi | **0** su 57 campionamenti |
+| Connessioni TCP in uscita del processo durante l'analisi | **0** su almeno 40 campionamenti |
 | Registro di sistema (chiavi di avvio, `Run`, `RunOnce`, `.NETFramework`, `HKCU\Software\CleanSlate`) | Invariato prima/dopo |
 | Elenco dei servizi | Invariato prima/dopo |
 | Elenco delle attività pianificate | Invariato prima/dopo |

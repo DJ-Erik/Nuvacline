@@ -129,14 +129,15 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 - [x] Documentazione test e comandi di build
 - [x] Avvio eseguibile verificato nell'ambiente di sviluppo
 - [x] Verifica statica privacy (sorgenti + assembly)
-- [x] Verifica end-to-end GUI automatizzata (`tests/verify.ps1`): **24/24 controlli** — avvio
-      finestra, pressione "Analizza", stato terminale, riepilogo letto, percorso report letto,
-      file di report presente e conforme, pulsanti presenti, chiusura, nessun processo
-      residente, registro invariato, servizi invariati, attività invariate, nessun avvio
-      automatico, 0 connessioni TCP in uscita
+- [x] Verifica end-to-end GUI automatizzata (`tests/verify.ps1`): **31/31 controlli** — avvio
+      finestra, stato iniziale (elenco vuoto e pulsante pulizia disabilitato), pressione
+      "Analizza", stato terminale, riepilogo letto, tabella con lo stesso numero di elementi
+      proposti e pulsante pulizia abilitato, percorso report letto, file di report presente e
+      conforme, pulsanti presenti, chiusura, nessun processo residente, registro invariato,
+      servizi invariati, attività invariate, nessun avvio automatico, 0 connessioni TCP in uscita
 - [~] Verifica traffico di rete in esecuzione: **campionamento runtime** (`Get-NetTCPConnection`
-      per PID, 57 campionamenti, 0 connessioni) + verifica statica. Non è una cattura pacchetti
-      a livello di rete → limite dichiarato in `PRIVACY.md`
+      per PID, almeno 40 campionamenti per esecuzione, 0 connessioni) + verifica statica.
+      Non è una cattura pacchetti a livello di rete → limite dichiarato in `PRIVACY.md`
 
 ---
 
@@ -172,7 +173,7 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 3. **Verifica di rete in esecuzione non completa**: in questo ambiente non è disponibile uno
    strumento di cattura pacchetti utilizzabile senza privilegi elevati. Sono state eseguite la
    verifica statica (sorgenti + assembly) e una **verifica di runtime per campionamento** delle
-   connessioni TCP del processo (57 campionamenti durante un'analisi reale, 0 connessioni).
+   connessioni TCP del processo (almeno 40 campionamenti durante un'analisi reale, 0 connessioni).
    Una trasmissione brevissima tra due campionamenti non sarebbe rilevata: limite dichiarato
    in `PRIVACY.md`.
 4. `System.dll` è referenziato (necessario per `System.Diagnostics.Stopwatch`): è una assembly
@@ -188,8 +189,8 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 | Compilazione Release x64 | `bin/Release/CleanSlate.exe` (build ripetuta) |
 | Suite di test | **63/63** su 3 esecuzioni consecutive |
 | Residui del fixture di test dopo la suite | **0** (dopo il fix del ripristino ACL con `icacls /reset`) |
-| Verifica end-to-end GUI (`tests/verify.ps1`) | **24/24** |
-| Connessioni TCP in uscita durante un'analisi reale | **0** / 57 campionamenti |
+| Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** |
+| Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
 | Pacchetto portable | `artifacts/alpha-0.1/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
@@ -200,6 +201,6 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 ```powershell
 cd C:\Users\User\Documents\Experiments\cleanslate
 powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 63/63 attesi
-powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 24/24 attesi
+powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 31/31 attesi
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package    # pacchetto portable
 ```

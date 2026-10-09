@@ -98,8 +98,8 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Verifica | Risultato |
 |---|---|
 | Suite di test | **63/63 superati**, ripetuto su 3 esecuzioni consecutive |
-| Verifica end-to-end GUI (`verify.ps1`) | **24/24 controlli superati** |
-| Rete (campionamento runtime) | **0 connessioni TCP in uscita** su 57 campionamenti durante l'analisi reale |
+| Verifica end-to-end GUI (`verify.ps1`) | **31/31 controlli superati** |
+| Rete (campionamento runtime) | **0 connessioni TCP in uscita** su almeno 40 campionamenti durante l'analisi reale |
 | Registro di sistema | Invariato prima/dopo l'esecuzione |
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
