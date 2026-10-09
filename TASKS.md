@@ -238,6 +238,10 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
    soltanto nella finestra di conferma. Non è una falla di sicurezza (la conferma mostra
    comunque numero e dimensione prima di cancellare) ma è una lacuna di usabilità non
    corretta in questa versione, per non introdurre funzionalità nuove durante l'audit.
+10. **Build non riproducibile bit per bit**: `csc.exe` di .NET Framework incorpora un MVID
+   diverso a ogni compilazione, quindi la stessa sorgente produce un'eseguibile con hash
+   SHA-256 diverso. `SHA256SUMS.txt` va quindi verificato **solo rispetto al pacchetto con
+   cui è stato generato**, non rispetto a una ricompilazione locale.
 
 ## Riepilogo finale (stato reale)
 
@@ -246,12 +250,12 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
 | Compilazione Release x64 | `bin/Release/CleanSlate.exe` |
 | Suite di test | **73/73** su 3 esecuzioni consecutive |
 | Residui del fixture di test dopo la suite | **0** |
-| Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** |
+| Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** su `bin/Release` e di nuovo **31/31** sull'exe del pacchetto |
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
 | Pacchetto portable | `artifacts/alpha-0.1/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
-| Pacchetto == `bin/Release` | SHA-256 identici |
+| Pacchetto == `bin/Release` | SHA-256 identici nella stessa sessione di build (build non riproducibile) |
 | Build pre-audit conservata | `artifacts/audit-baseline/` (SHA-256 `bf33e9cb…`) |
 | Documentazione | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
 
@@ -276,7 +280,7 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
 | Cancellazione parziale / annullamento | Test | Cooperativo, nessun tocco sui residui | `Clean_CancellationIsCooperative…`, `Scan_CancellationDuringScan…` | — |
 | Build pubblicata: dipendenze | Riflessione sull'exe pubblicato | Solo assembly del framework .NET | elenco assembly referenziati | — |
 | Build pubblicata: rete/registro | Scansione nomi di metadati e stringhe | Nessun nome sospeto; `http://` solo namespace XML del manifest | audit build | Non è una cattura pacchetti |
-| Eseguibile reale | `tests\verify.ps1` | 31/31 | log della verifica | Pulizia reale non automatizzata |
+| Eseguibile reale | `tests\verify.ps1` | 31/31 su `bin/Release` e 31/31 sull'exe del pacchetto | log della verifica | Pulizia reale non automatizzata |
 
 ## Prossimo passo concreto (se la sessione dovesse interrompersi)
 

@@ -64,6 +64,9 @@ Prima versione alpha, portatile e offline.
 - Target **.NET Framework 4.8.1 + Windows Forms + C# 5**, x64, `asInvoker`, `longPathAware`.
 - Zero dipendenze di terze parti, zero pacchetti NuGet, zero scaricamenti.
 - I sorgenti sono UTF-8 senza BOM; la compilazione usa `/codepage:65001`.
+- La compilazione **non è riproducibile bit per bit**: `csc.exe` di .NET Framework cambia
+  MVID a ogni build, quindi `SHA256SUMS.txt` è valido solo per il pacchetto con cui è stato
+  generato.
 
 ### Limiti
 
