@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +31,7 @@ namespace CleanSlate.UI
         private Label _statusLabel;
         private ProgressBar _progress;
         private Label _summaryLabel;
+        private Label _reportLabel;
         private DataGridView _grid;
         private Label _footnoteLabel;
 
@@ -46,6 +48,7 @@ namespace CleanSlate.UI
         {
             BuildUi();
             UpdateSummaryLabel();
+            UpdateReportLabel();
             UpdateSelectionState();
             SetBusy(false);
             SetStatus("Pronto.");
@@ -63,6 +66,7 @@ namespace CleanSlate.UI
             KeyPreview = false;
 
             _titleLabel = new Label();
+            _titleLabel.Name = "lblTitle";
             _titleLabel.AutoSize = true;
             _titleLabel.Location = new Point(14, 12);
             _titleLabel.Font = new Font(Font.FontFamily, 14f, FontStyle.Bold);
@@ -70,6 +74,7 @@ namespace CleanSlate.UI
             Controls.Add(_titleLabel);
 
             _subtitleLabel = new Label();
+            _subtitleLabel.Name = "lblSubtitle";
             _subtitleLabel.AutoSize = false;
             _subtitleLabel.Location = new Point(14, 40);
             _subtitleLabel.Size = new Size(ClientSize.Width - 28, 32);
@@ -79,12 +84,13 @@ namespace CleanSlate.UI
                 + "Nessuna connessione di rete, nessun dato raccolto, nessuna modifica al registro, nessun avvio automatico.";
             Controls.Add(_subtitleLabel);
 
-            _btnAnalyze = CreateButton("Analizza", 14, 78, 110, OnAnalyzeClick);
-            _btnClean = CreateButton("Pulisci selezionati", 132, 78, 160, OnCleanClick);
-            _btnCancel = CreateButton("Annulla", 300, 78, 100, OnCancelClick);
-            _btnReport = CreateButton("Apri report", 408, 78, 120, OnReportClick);
+            _btnAnalyze = CreateButton("btnAnalyze", "Analizza", 14, 78, 110, OnAnalyzeClick);
+            _btnClean = CreateButton("btnClean", "Pulisci selezionati", 132, 78, 160, OnCleanClick);
+            _btnCancel = CreateButton("btnCancel", "Annulla", 300, 78, 100, OnCancelClick);
+            _btnReport = CreateButton("btnReport", "Apri report", 408, 78, 120, OnReportClick);
 
             _statusLabel = new Label();
+            _statusLabel.Name = "lblStatus";
             _statusLabel.AutoSize = false;
             _statusLabel.Location = new Point(14, 112);
             _statusLabel.Size = new Size(ClientSize.Width - 28, 20);
@@ -93,6 +99,7 @@ namespace CleanSlate.UI
             Controls.Add(_statusLabel);
 
             _progress = new ProgressBar();
+            _progress.Name = "progress";
             _progress.Location = new Point(14, 136);
             _progress.Size = new Size(ClientSize.Width - 28, 20);
             _progress.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -102,6 +109,7 @@ namespace CleanSlate.UI
             Controls.Add(_progress);
 
             _summaryLabel = new Label();
+            _summaryLabel.Name = "lblSummary";
             _summaryLabel.AutoSize = false;
             _summaryLabel.Location = new Point(14, 162);
             _summaryLabel.Size = new Size(ClientSize.Width - 28, 36);
@@ -110,9 +118,21 @@ namespace CleanSlate.UI
             _summaryLabel.Text = "Nessuna analisi eseguita.";
             Controls.Add(_summaryLabel);
 
+            _reportLabel = new Label();
+            _reportLabel.Name = "lblReportPath";
+            _reportLabel.AutoSize = false;
+            _reportLabel.Location = new Point(14, 200);
+            _reportLabel.Size = new Size(ClientSize.Width - 28, 16);
+            _reportLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _reportLabel.AutoEllipsis = true;
+            _reportLabel.ForeColor = Color.DimGray;
+            _reportLabel.Text = "Report: nessuno generato.";
+            Controls.Add(_reportLabel);
+
             _grid = new DataGridView();
-            _grid.Location = new Point(14, 204);
-            _grid.Size = new Size(ClientSize.Width - 28, ClientSize.Height - 204 - 46);
+            _grid.Name = "gridResults";
+            _grid.Location = new Point(14, 222);
+            _grid.Size = new Size(ClientSize.Width - 28, ClientSize.Height - 222 - 46);
             _grid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _grid.ReadOnly = false;
             _grid.AllowUserToAddRows = false;
@@ -129,13 +149,13 @@ namespace CleanSlate.UI
             _grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(240, 240, 240);
             _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             _grid.ColumnHeadersHeight = 26;
-            _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             BuildGridColumns();
             _grid.CurrentCellDirtyStateChanged += OnGridCurrentCellDirtyStateChanged;
             _grid.CellValueChanged += OnGridCellValueChanged;
             Controls.Add(_grid);
 
             _footnoteLabel = new Label();
+            _footnoteLabel.Name = "lblFootnote";
             _footnoteLabel.AutoSize = false;
             _footnoteLabel.Location = new Point(14, ClientSize.Height - 40);
             _footnoteLabel.Size = new Size(ClientSize.Width - 28, 34);
@@ -146,9 +166,10 @@ namespace CleanSlate.UI
             Controls.Add(_footnoteLabel);
         }
 
-        private Button CreateButton(string text, int x, int y, int width, EventHandler onClick)
+        private Button CreateButton(string name, string text, int x, int y, int width, EventHandler onClick)
         {
             Button button = new Button();
+            button.Name = name;
             button.Text = text;
             button.Location = new Point(x, y);
             button.Size = new Size(width, 30);
@@ -297,6 +318,8 @@ namespace CleanSlate.UI
             _currentRoot = path.Root;
             _lastScan = null;
             _lastClean = null;
+            _lastReportPath = null;
+            UpdateReportLabel();
             PopulateGrid(null);
 
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -334,6 +357,7 @@ namespace CleanSlate.UI
                 catch (ObjectDisposedException) { }
                 SetBusy(false);
                 UpdateSummaryLabel();
+                if (_lastScan != null) GenerateReport();
             }
         }
 
@@ -495,6 +519,7 @@ namespace CleanSlate.UI
                 catch (ObjectDisposedException) { }
                 SetBusy(false);
                 UpdateSummaryLabel();
+                if (_lastClean != null) GenerateReport();
             }
         }
 
@@ -625,49 +650,73 @@ namespace CleanSlate.UI
         {
             if (_busy) return;
 
-            if (!string.IsNullOrEmpty(_lastReportPath) && File.Exists(_lastReportPath))
+            if (string.IsNullOrEmpty(_lastReportPath) || !File.Exists(_lastReportPath))
             {
-                OpenReportFile(_lastReportPath);
-                return;
+                GenerateReport();
+                if (string.IsNullOrEmpty(_lastReportPath))
+                {
+                    ShowMessageOwner(
+                        "Non ci sono ancora risultati da riportare. Eseguire prima un'analisi.",
+                        "CleanSlate", MessageBoxIcon.Information);
+                    return;
+                }
             }
-            ExportReport(true);
+
+            OpenReportFile(_lastReportPath);
         }
 
-        private bool ExportReport(bool openAfter)
+        /// <summary>
+        /// Scrive il report locale al termine di un'analisi o di una pulizia e ne mostra il
+        /// percorso nella finestra. Il file resta sulla macchina dell'utente: non viene inviato
+        /// a nessuno e non viene scritto in cartelle condivise o sincronizzate.
+        /// </summary>
+        private void GenerateReport()
         {
-            if (_lastScan == null && _lastClean == null)
+            if (_lastScan == null && _lastClean == null) return;
+
+            try
             {
-                ShowMessageOwner(
-                    "Non ci sono ancora risultati da riportare. Eseguire prima un'analisi.",
-                    "CleanSlate", MessageBoxIcon.Information);
-                return false;
+                string folder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "CleanSlate", "reports");
+                Directory.CreateDirectory(folder);
+
+                string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+                string candidate = Path.Combine(folder, "cleanslate-" + stamp + ".txt");
+                int suffix = 1;
+                while (File.Exists(candidate))
+                {
+                    candidate = Path.Combine(folder,
+                        "cleanslate-" + stamp + "-" + suffix.ToString(CultureInfo.InvariantCulture) + ".txt");
+                    suffix++;
+                }
+
+                ReportData data = ReportBuilder.Build(_lastScan, _lastClean, _currentRoot);
+                ReportExporter.Export(candidate, data);
+                _lastReportPath = candidate;
+                UpdateReportLabel();
             }
-
-            using (SaveFileDialog dialog = new SaveFileDialog())
+            catch (Exception ex)
             {
-                dialog.Title = "Salva report locale";
-                dialog.Filter = "Report di testo (*.txt)|*.txt|Report JSON (*.json)|*.json";
-                dialog.DefaultExt = "txt";
-                dialog.AddExtension = true;
-                dialog.OverwritePrompt = true;
-                dialog.FileName = "CleanSlate-report-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                _lastReportPath = null;
+                UpdateReportLabel();
+                SetStatus("Report non generato: " + ex.Message);
+            }
+        }
 
-                if (dialog.ShowDialog(this) != DialogResult.OK) return false;
+        private void UpdateReportLabel()
+        {
+            if (_reportLabel == null) return;
 
-                try
-                {
-                    ReportData data = ReportBuilder.Build(_lastScan, _lastClean, _currentRoot);
-                    ReportExporter.Export(dialog.FileName, data);
-                    _lastReportPath = dialog.FileName;
-                    SetStatus("Report salvato.");
-                    if (openAfter) OpenReportFile(dialog.FileName);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    ShowMessageOwner("Impossibile salvare il report: " + ex.Message, "CleanSlate", MessageBoxIcon.Error);
-                    return false;
-                }
+            if (!string.IsNullOrEmpty(_lastReportPath) && File.Exists(_lastReportPath))
+            {
+                _reportLabel.Text = "Report: " + _lastReportPath;
+                _reportLabel.ForeColor = Color.DimGray;
+            }
+            else
+            {
+                _reportLabel.Text = "Report: nessuno generato. Viene scritto al termine di un'analisi o di una pulizia.";
+                _reportLabel.ForeColor = Color.Gray;
             }
         }
 
@@ -676,6 +725,7 @@ namespace CleanSlate.UI
             if (!Path.IsPathRooted(path) || !File.Exists(path))
             {
                 _lastReportPath = null;
+                UpdateReportLabel();
                 ShowMessageOwner("Il report selezionato non esiste più.", "CleanSlate", MessageBoxIcon.Warning);
                 return;
             }

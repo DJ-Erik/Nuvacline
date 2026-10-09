@@ -7,8 +7,8 @@ namespace CleanSlate.Core
 {
     /// <summary>
     /// Esportazione del report locale in TXT o JSON.
-    /// La scrittura avviene esclusivamente sul percorso scelto esplicitamente dall'utente:
-    /// nessun file viene creato automaticamente e nessun dato viene trasmesso.
+    /// L'oggetto del report viene sempre costruito in memoria: la scrittura su disco avviene
+    /// solo su un percorso passato esplicitamente dal chiamante e nessun file viene trasmesso.
     /// </summary>
     public static class ReportExporter
     {

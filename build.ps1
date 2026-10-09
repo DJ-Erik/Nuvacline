@@ -60,7 +60,9 @@ COME SI USA
 2. Premere "Analizza": l'analisi e' in sola lettura e non modifica nulla.
 3. Esaminare l'elenco, selezionare o deselezionare gli elementi desiderati.
 4. Premere "Pulisci selezionati" e confermare nella finestra di conferma.
-5. Facoltativo: "Apri report" esporta un file TXT o JSON solo su richiesta.
+5. Il report locale viene scritto in automatico in
+   %LOCALAPPDATA%\CleanSlate\reports\ e il percorso appare nella finestra.
+   "Apri report" lo apre nel lettore di testo predefinito.
 
 REQUISITI
 ---------

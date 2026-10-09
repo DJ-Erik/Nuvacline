@@ -1,0 +1,82 @@
+# Privacy di CleanSlate
+
+Documento relativo alla versione **0.1.0-alpha**.
+
+## In una frase
+
+CleanSlate non raccoglie, non calcola, non conserva e non trasmette alcun dato personale:
+funziona interamente sulla macchina e senza rete.
+
+## Dati trattati
+
+| Dato | Trattamento |
+|---|---|
+| Elenco dei file temporanei | Calcolato in memoria, mostrato nella finestra, non salvato altrimenti |
+| Dimensioni e date dei file | Idem |
+| Percorsi | Mostrati nella finestra; nel report la radice temporanea è sostituita dal segnaposto `%TEMP%` |
+| Nome utente / profilo utente | **Mai** scritto nel report |
+| Report locale | Scritto solo in `%LOCALAPPDATA%\CleanSlate\reports\` sul proprio PC |
+| Dati di telemetria | **Nessuno** |
+
+Il report contiene solo controlli numerici (file analizzati, proposti, scartati, errori, byte) e
+note di testo. Un test automatico verifica che il report non contenga il profilo utente né il
+percorso reale della cartella temporanea.
+
+## Cosa non viene fatto
+
+- Nessuna connessione di rete: nessun controllo aggiornamenti, nessuna telemetria, nessuna
+  pubblicità, nessun tracciamento, nessun download.
+- Nessuna lettura o scrittura del registro di Windows.
+- Nessun servizio, nessuna attività pianificata, nessuna voce di avvio automatico.
+- Nessun processo rimasto in esecuzione dopo la chiusura della finestra.
+- Nessun cookie, nessun identificativo, nessun account, nessun file di configurazione nella
+  cartella dell'utente oltre al report esplicito.
+- Nessuna cartella condivisa o sincronizzata viene usata.
+
+## Verifiche eseguite
+
+### Statiche (automatiche, `PrivacyTests`)
+
+- Le sorgenti non contengono chiamate a API di rete (`WebRequest`, `HttpClient`,
+  `Socket`, `Dns`, `WebClient`).
+- Le sorgenti non contengono API di registro (`Microsoft.Win32.Registry`, `RegistryKey`).
+- Le sorgenti non contengono telemetria né persistenza in avvio automatico.
+- Le sorgenti non contengono invocazioni di shell o comandi distruttivi.
+- L'assembly non referenzia assembly di rete: solo `System`, `System.Core`, `System.Drawing`,
+  `System.Windows.Forms`.
+- Il manifest dichiara `asInvoker`.
+
+### In esecuzione (`tests\verify.ps1`)
+
+Eseguita sull'eseguibile Release reale, con analisi della vera cartella temporanea:
+
+| Controllo | Esito |
+|---|---|
+| Connessioni TCP in uscita del processo durante l'analisi | **0** su 57 campionamenti |
+| Registro di sistema (chiavi di avvio, `Run`, `RunOnce`, `.NETFramework`, `HKCU\Software\CleanSlate`) | Invariato prima/dopo |
+| Elenco dei servizi | Invariato prima/dopo |
+| Elenco delle attività pianificate | Invariato prima/dopo |
+| Voci di avvio automatico con nome CleanSlate | Nessuna |
+| Processo residente dopo la chiusura | Nessuno |
+| Nuovi file creati dal programma | Solo il report in `%LOCALAPPDATA%\CleanSlate\reports\` |
+| Contenuto del report | Intestazione attesa, nessun profilo utente |
+
+## Limiti dichiarati
+
+1. **Campione di rete**: la verifica runtime misura le connessioni TCP stabilite del processo
+   durante una sessione di analisi. Non è una cattura pacchetti a livello di rete: un'ipotetica
+   trasmissione ultrabreve tra due campionamenti non sarebbe rilevata. La verifica statica
+   (nessuna API di rete nei sorgenti, nessuna assembly di rete referenziata) copre questa
+   lacuna in modo indipendente.
+2. **Ambiente di test**: le verifiche sono state eseguite su questo PC, con questa versione
+   dell'eseguibile. Ogni nuova build andrebbe riverificata.
+3. **Il report è un file di testo**: resta sul PC dell'utente ed è leggibile da chiunque abbia
+   accesso al proprio profilo. Non contiene dati personali, ma va eliminato se non serve.
+4. **.NET Framework può scrivere nei propri riferimenti**: l'esecuzione di un programma .NET
+   può toccare chiavi di `HKCU\Software\Microsoft\.NETFramework`. Sono scritture del runtime
+   Microsoft, non di CleanSlate; il confronto delle chiavi su queste aree è mostrato come nota
+   nella verifica.
+
+## Contatto
+
+Per domande sulla privacy, aprire un issue nel repository con l'etichetta `privacy`.

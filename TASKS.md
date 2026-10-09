@@ -83,8 +83,11 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 ## FASE 6 — Report e gestione errori
 
 - [x] Riepilogo finale: eliminati, byte effettivi, saltati, errori, tempo, non recuperato
-- [x] Esportazione report TXT/JSON **solo** su richiesta esplicita (SaveFileDialog)
+- [x] Report TXT generato automaticamente al termine di ogni analisi e di ogni pulizia
+      (`%LOCALAPPDATA%\CleanSlate\reports\cleanslate-<timestamp>.txt`)
+- [x] Percorso del report mostrato nella finestra (`lblReportPath`); "Apri report" lo apre
 - [x] Sanitizzazione percorsi (sostituzione radice con `%TEMP%`), nessun username
+- [x] Assenza di scritture durante la costruzione del report in memoria (test automatico)
 
 ## FASE 7 — Test di sicurezza e regressione
 
@@ -119,15 +122,21 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 
 ## FASE 9 — Verifica finale e documentazione
 
-- [x] `README.md`
-- [x] `SECURITY.md`
-- [x] `PRIVACY.md`
-- [x] `CHANGELOG.md`
+- [x] `README.md` — requisiti, uso, limiti, comandi di build e test, stato verificato
+- [x] `SECURITY.md` — modello di minaccia, 8 difese, limiti dichiarati
+- [x] `PRIVACY.md` — dati trattati, verifiche statiche ed eseguite in esecuzione, limiti
+- [x] `CHANGELOG.md` — 0.1.0-alpha
 - [x] Documentazione test e comandi di build
 - [x] Avvio eseguibile verificato nell'ambiente di sviluppo
 - [x] Verifica statica privacy (sorgenti + assembly)
-- [!] Verifica runtime traffico di rete: **non eseguibile** in questo ambiente (nessun strumento di cattura pacchetti con privilegi verificato) → documentata in `PRIVACY.md`
-- [~] Verifica GUI end-to-end automatizzata (script UI Automation) → vedi riepilogo finale
+- [x] Verifica end-to-end GUI automatizzata (`tests/verify.ps1`): **24/24 controlli** — avvio
+      finestra, pressione "Analizza", stato terminale, riepilogo letto, percorso report letto,
+      file di report presente e conforme, pulsanti presenti, chiusura, nessun processo
+      residente, registro invariato, servizi invariati, attività invariate, nessun avvio
+      automatico, 0 connessioni TCP in uscita
+- [~] Verifica traffico di rete in esecuzione: **campionamento runtime** (`Get-NetTCPConnection`
+      per PID, 57 campionamenti, 0 connessioni) + verifica statica. Non è una cattura pacchetti
+      a livello di rete → limite dichiarato in `PRIVACY.md`
 
 ---
 
@@ -160,14 +169,37 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 2. **Percorsi molto lunghi (>260 caratteri)**: il manifest dichiara `longPathAware`, ma il
    runtime .NET Framework può comunque rifiutare alcuni percorsi lunghi. Tali elementi vengono
    **saltati e conteggiati come errori**, mai fatti fallire il programma.
-3. **Verifica di rete in esecuzione non effettuata**: in questo ambiente non è disponibile uno
-   strumento di cattura pacchetti utilizzabile senza privilegi elevati. È stata eseguita la
-   verifica statica (sorgenti + assembly referenziati) ed è documentata in `PRIVACY.md`.
+3. **Verifica di rete in esecuzione non completa**: in questo ambiente non è disponibile uno
+   strumento di cattura pacchetti utilizzabile senza privilegi elevati. Sono state eseguite la
+   verifica statica (sorgenti + assembly) e una **verifica di runtime per campionamento** delle
+   connessioni TCP del processo (57 campionamenti durante un'analisi reale, 0 connessioni).
+   Una trasmissione brevissima tra due campionamenti non sarebbe rilevata: limite dichiarato
+   in `PRIVACY.md`.
 4. `System.dll` è referenziato (necessario per `System.Diagnostics.Stopwatch`): è una assembly
    del framework .NET che contiene anche classi di rete, ma **nessuna** di tali classi è usata
    dal codice; la cosa è verificata da test automatici sulle sorgenti.
+5. `tests/verify.ps1` usa `BM_CLICK` sull'handle del controllo perché WinForms su .NET
+   Framework espone i controlli tramite il bridge MSAA e non offre `InvokePattern`.
+
+## Riepilogo finale (stato reale)
+
+| Verifica | Risultato |
+|---|---|
+| Compilazione Release x64 | `bin/Release/CleanSlate.exe` (build ripetuta) |
+| Suite di test | **63/63** su 3 esecuzioni consecutive |
+| Residui del fixture di test dopo la suite | **0** (dopo il fix del ripristino ACL con `icacls /reset`) |
+| Verifica end-to-end GUI (`tests/verify.ps1`) | **24/24** |
+| Connessioni TCP in uscita durante un'analisi reale | **0** / 57 campionamenti |
+| Registro, servizi, attività, avvio automatico | Invariati |
+| Processo residente dopo la chiusura | Nessuno |
+| Pacchetto portable | `artifacts/alpha-0.1/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
+| Documentazione | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
 
 ## Prossimo passo concreto (se la sessione dovesse interrompersi)
 
-Rieseguire `powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1` e
-`powershell -ExecutionPolicy Bypass -File build.ps1` dalla cartella `cleanslate`.
+```powershell
+cd C:\Users\User\Documents\Experiments\cleanslate
+powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 63/63 attesi
+powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 24/24 attesi
+powershell -ExecutionPolicy Bypass -File build.ps1 -Package    # pacchetto portable
+```
