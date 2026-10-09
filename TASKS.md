@@ -111,6 +111,16 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 - [x] Test 17 — esportazione report esplicita e locale
 - [x] Test extra — statica privacy (nessuna API di rete/registro/telemetria nelle fonti)
 - [x] Test extra — assembly referenziati senza assembly di rete
+- [x] Test audit (FASE 10) — file toccato dopo la scansione → saltato
+- [x] Test audit (FASE 10) — file sostituito da directory dopo la scansione → saltato
+- [x] Test audit (FASE 10) — sottocartella sostituita da junction dopo la scansione → saltato
+- [x] Test audit (FASE 10) — solo gli elementi passati al motore vengono cancellati
+- [x] Test audit (FASE 10) — GUI: pulsante pulizia disabilitato senza selezione
+- [x] Test audit (FASE 10) — GUI: l'elemento deselezionato non arriva al motore e sopravvive
+- [x] Test audit (FASE 10) — GUI: la selezione resta corretta dopo l'ordinamento
+- [x] Test audit (FASE 10) — percorsi con spazio/punto finale, prefissi `\\?\` e `\\.\`, ADS
+
+**Totale suite: 73 test, 73 superati su 3 esecuzioni consecutive, nessun residuo di fixture.**
 
 ## FASE 8 — Build Release portable
 
@@ -139,6 +149,32 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
       per PID, almeno 40 campionamenti per esecuzione, 0 connessioni) + verifica statica.
       Non è una cattura pacchetti a livello di rete → limite dichiarato in `PRIVACY.md`
 
+## FASE 10 — Audit di sicurezza pre-distribuzione (2026-10-09)
+
+Revisione indipendente del percorso scansione → cancellazione. La build precedente è stata
+conservata in `artifacts/audit-baseline/` prima di ogni modifica.
+
+- [x] Ispezione dei 4 commit recenti, di `TASKS.md` e della build pubblicata
+- [x] Analisi del percorso completo scansione → cancellazione (`TempFolderScanner`,
+      `PathSafety`, `TempFileCleaner`, `MainForm`)
+- [x] Verifica della ricontrollazione immediatamente prima di ogni cancellazione
+- [x] Caccia a traversal, reparse point, junction, symlink, file sostituiti, radice,
+      percorsi non autorizzati, `\\?\`, `\\.\`, ADS, spazi e punti finali, nome breve 8.3
+- [x] **Problema trovato e corretto**: il controllo reparse point era eseguito *prima* della
+      lettura di dimensione/età, con una finestra TOCTOU verso `File.Delete`. Il controllo è
+      stato spostato a essere l'ultimo prima della cancellazione
+      (`TempFileCleaner.ProcessOne`)
+- [x] Test di regressione sullo scenario junction sostituita dopo la scansione
+- [x] Verifica che gli elementi deselezionati non possano essere cancellati (test GUI + test
+      motore) e che la selezione sia visibile e stabile anche dopo l'ordinamento
+- [x] Verifica file recenti e file modificati dopo la scansione → saltati secondo le regole
+- [x] Verifica file bloccati, accesso negato, cancellazioni parziali, annullamento cooperativo
+- [x] Ispezione della build pubblicata: assembly referenziati, tipi pubblici, nomi di metadati
+      di rete e di registro, stringhe `http://`, file di configurazione, manifest `asInvoker`
+- [x] Ripetizione della verifica end-to-end sull'eseguibile reale (**31/31**)
+- [x] Aggiornamento di `SECURITY.md`, `PRIVACY.md`, `README.md`, `CHANGELOG.md` e di questa
+      checklist
+
 ---
 
 ## Criteri di completamento 0.1 Alpha
@@ -147,13 +183,13 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
 |---|---|---|---|
 | 1 | La GUI si avvia | [x] | `verify.ps1`: finestra creata, titolo letto |
 | 2 | L'analisi funziona | [x] | `verify.ps1`: stato "Analisi completata." + riepilogo letto |
-| 3 | I risultati sono visualizzati correttamente | [x] | `verify.ps1`: righe in tabella (3103) = "Proposti" del riepilogo (3103) |
-| 4 | La selezione degli elementi funziona | [x]* | `verify.ps1`: pulsante pulizia **disabilitato** senza selezione e **abilitato** dopo l'analisi. Il clic sulla singola checkbox **non** è automatabile: la griglia WinForms non espone le righe come elementi UIA |
-| 5 | La pulizia richiede conferma esplicita | [x]* | Dialogo di conferma con numero/byte e default **No**; **non eseguito in automatico** per non cancellare i file temporanei reali dell'utente. Il motore di cancellazione è coperto da `CleanerTests` su fixture dedicati |
-| 6 | I percorsi esterni vengono rifiutati | [x] | `PathSafetyTests` (containment, `..`, reparse, radice) |
+| 3 | I risultati sono visualizzati correttamente | [x] | `verify.ps1`: righe in tabella (3109) = "Proposti" del riepilogo (3109) |
+| 4 | La selezione degli elementi funziona | [x]* | `verify.ps1`: pulsante pulizia **disabilitato** senza selezione e **abilitato** dopo l'analisi. `SecurityAuditTests.Ui_*`: la riga deselezionata non arriva al motore e sopravvive, e la selezione resta corretta anche dopo l'ordinamento. Il clic sulla singola checkbox **non** è automatabile: la griglia WinForms non espone le righe come elementi UIA |
+| 5 | La pulizia richiede conferma esplicita | [x]* | Dialogo di conferma con numero/byte e default **No**; **non eseguito in automatico** per non cancellare i file temporanei reali dell'utente. Il motore di cancellazione è coperto da `CleanerTests` e `SecurityAuditTests` su fixture dedicati |
+| 6 | I percorsi esterni vengono rifiutati | [x] | `PathSafetyTests` + `SecurityAuditTests.PathSafety_*` (`..`, reparse, radice, `\\?\`, `\\.\`, ADS, spazi/punti finali) |
 | 7 | Gli errori non provocano crash non gestiti | [x] | `ScannerTests`/`CleanerTests` (ACL negata, file bloccato, cartella inesistente) |
 | 8 | La reportistica funziona | [x] | `ReportTests` + `verify.ps1` (file creato, contenuto conforme, percorso mostrato in GUI) |
-| 9 | La suite di test obbligatori passa | [x] | **63/63** su 3 esecuzioni consecutive |
+| 9 | La suite di test obbligatori passa | [x] | **73/73** su 3 esecuzioni consecutive |
 | 10 | La build Release viene generata | [x] | `artifacts/alpha-0.1/` + `SHA256SUMS.txt` ricalcolato e riverificato |
 | 11 | L'eseguibile viene avviato e verificato | [x] | `verify.ps1` **31/31** |
 | 12 | La documentazione descrive il prodotto | [x] | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
@@ -190,27 +226,63 @@ Legenda: `[ ]` da fare · `[~]` in corso · `[x]` fatto e verificato · `[!]` li
    dall'unità di test su fixture create apposta.
 7. **Selezione riga per riga non automatabile**: la griglia WinForms non espone le righe come
    elementi di automazione, quindi il clic su una singola checkbox non è coperto dalla verifica
-   end-to-end.
+   end-to-end. È invece coperto da test che esercitano lo stesso codice della GUI
+   (`SecurityAuditTests.Ui_*`).
+8. **Finestra TOCTOU residua verso `File.Delete`**: il controllo sul reparse point è l'ultimo
+   prima della cancellazione ma non è atomicamente accoppiato ad essa. Un processo concorrente
+   con diritti di scrittura sulla stessa cartella potrebbe sostituire una directory con una
+   junction in quell'intervallo. Eliminare del tutto la finestra richiederebbe l'apertura del
+   file con `FILE_FLAG_OPEN_REPARSE_POINT` via P/Invoke: non inclusa in 0.1.
+9. **Nessun contatore di selezione nella GUI**: la selezione è visibile solo tramite la
+   colonna "Selez." e lo stato del pulsante; il conteggio degli elementi selezionati compare
+   soltanto nella finestra di conferma. Non è una falla di sicurezza (la conferma mostra
+   comunque numero e dimensione prima di cancellare) ma è una lacuna di usabilità non
+   corretta in questa versione, per non introdurre funzionalità nuove durante l'audit.
 
 ## Riepilogo finale (stato reale)
 
 | Verifica | Risultato |
 |---|---|
-| Compilazione Release x64 | `bin/Release/CleanSlate.exe` (build ripetuta) |
-| Suite di test | **63/63** su 3 esecuzioni consecutive |
-| Residui del fixture di test dopo la suite | **0** (dopo il fix del ripristino ACL con `icacls /reset`) |
+| Compilazione Release x64 | `bin/Release/CleanSlate.exe` |
+| Suite di test | **73/73** su 3 esecuzioni consecutive |
+| Residui del fixture di test dopo la suite | **0** |
 | Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** |
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
 | Pacchetto portable | `artifacts/alpha-0.1/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
+| Pacchetto == `bin/Release` | SHA-256 identici |
+| Build pre-audit conservata | `artifacts/audit-baseline/` (SHA-256 `bf33e9cb…`) |
 | Documentazione | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
+
+## Tabella dell'audit pre-distribuzione
+
+| Controllo | Metodo | Risultato | Evidenza | Limite residuo |
+|---|---|---|---|---|
+| Perimetro e commit | `git log --stat` sui 4 commit | 4 commit, working tree pulito | storico Git | — |
+| Percorso scansione → cancellazione | Lettura di `TempPathProvider`, `PathSafety`, `TempFolderScanner`, `TempFileCleaner`, `MainForm` | Catena di verifiche completa e documentata | sorgenti | — |
+| Ricontrolla ogni elemento prima di cancellare | Lettura di `TempFileCleaner.ProcessOne` | Sì: normalizzazione, radice, containment, esistenza, attributi, reparse, età | `TempFileCleaner.cs` | — |
+| Traversal `..` | Test + sonda runtime | Rifiutato | `IsInsideRoot_TraversalEscapingRoot_ReturnsFalse` | — |
+| Prefissi `\\?\` / `\\.\` | Test | Rifiutati (fail-safe) | `PathSafety_PrefixedDeviceOrDosDevicePath_IsRejected` | — |
+| Stream dati alternativo | Test | Rifiutato senza eccezione | `PathSafety_AlternateDataStream_IsRejectedWithoutCrash` | — |
+| Spazio / punto finale | Test + sonda runtime | Normalizzati dentro la radice | `PathSafety_TrailingSpaceOrDot_StillResolveInsideRoot` | — |
+| Nome breve 8.3 | Sonda runtime | `GetFullPath` espande al nome lungo | sonda su volume C: | Non coperto da test automatico |
+| Junction / symlink | Test | Non seguiti in scansione e rilevati in cancellazione | `Clean_PathThroughJunction_…`, `Clean_PathComponentReplacedByJunctionAfterScan_…` | Finestra residua fino a `File.Delete` |
+| File sostituito dopo la scansione | Test (directory, junction, tocco, eliminazione) | Sempre saltato, contenuti intatti | 4 test `SecurityAuditTests`/`CleanerTests` | — |
+| Elementi non selezionati | Test GUI + test motore | Non arrivano al motore e sopravvivono | `Ui_UncheckedItemsAreNotPassedToCleanerAndSurvive`, `Clean_OnlyItemsExplicitlyPassedToCleanerAreDeleted` | Clic su singola checkbox non automatabile |
+| Visibilità della selezione | Test GUI + lettura e2e | Colonna "Selez.", pulsante abilitato/sdisabilitato, conferma con conteggio | `verify.ps1`, `SecurityAuditTests.Ui_*` | Nessun contatore "N selezionati" in finestra |
+| File recenti | Test | Saltati in scansione e in cancellazione | `Scan_FileNewerThanLimit_IsExcluded`, `Clean_FileNewerThanLimit_IsSkipped` | — |
+| File bloccati / ACL negate | Test | Saltati o conteggiati come errore, operazione prosegue | `Clean_LockedFile_…`, `Clean_ReadOnlyFile_…`, `Scan_AccessDeniedDirectory_…` | — |
+| Cancellazione parziale / annullamento | Test | Cooperativo, nessun tocco sui residui | `Clean_CancellationIsCooperative…`, `Scan_CancellationDuringScan…` | — |
+| Build pubblicata: dipendenze | Riflessione sull'exe pubblicato | Solo assembly del framework .NET | elenco assembly referenziati | — |
+| Build pubblicata: rete/registro | Scansione nomi di metadati e stringhe | Nessun nome sospeto; `http://` solo namespace XML del manifest | audit build | Non è una cattura pacchetti |
+| Eseguibile reale | `tests\verify.ps1` | 31/31 | log della verifica | Pulizia reale non automatizzata |
 
 ## Prossimo passo concreto (se la sessione dovesse interrompersi)
 
 ```powershell
 cd C:\Users\User\Documents\Experiments\cleanslate
-powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 63/63 attesi
+powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 73/73 attesi
 powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 31/31 attesi
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package    # pacchetto portable
 ```

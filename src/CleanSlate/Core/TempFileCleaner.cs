@@ -181,14 +181,6 @@ namespace CleanSlate.Core
                 return;
             }
 
-            if (PathSafety.HasReparseComponentInsideRoot(root, full))
-            {
-                outcome.Outcome = CleanOutcome.SkippedReparse;
-                outcome.Message = "Il file si trova attraverso un collegamento ed è stato ignorato.";
-                result.SkippedCount++;
-                return;
-            }
-
             long length;
             DateTime lastWriteUtc;
             try
@@ -223,6 +215,18 @@ namespace CleanSlate.Core
             {
                 outcome.Outcome = CleanOutcome.SkippedTooRecent;
                 outcome.Message = "Il file è stato modificato di recente ed è stato ignorato.";
+                result.SkippedCount++;
+                return;
+            }
+
+            // Ultimo controllo strutturale, subito prima della cancellazione.
+            // Se una directory del percorso venisse sostituita da una junction nel frattempo,
+            // File.Delete risolverebbe il percorso attraverso il collegamento: ridurre al
+            // minimo la finestra tra questo controllo e la cancellazione limita il rischio.
+            if (PathSafety.HasReparseComponentInsideRoot(root, full))
+            {
+                outcome.Outcome = CleanOutcome.SkippedReparse;
+                outcome.Message = "Il file si trova attraverso un collegamento ed è stato ignorato.";
                 result.SkippedCount++;
                 return;
             }

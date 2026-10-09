@@ -43,9 +43,13 @@ Prima di ogni cancellazione `TempFileCleaner` ricalcola:
 
 - normalizzazione del percorso;
 - containment dentro la radice autorizzata;
-- assenza di componenti di reparse point;
 - età minima (24 ore di impostazione predefinita);
-- che il percorso non sia la radice stessa.
+- che il percorso non sia la radice stessa;
+- che né il file né alcuna componente del suo percorso sotto la radice sia un reparse point.
+
+Il controllo sul reparse point è **l'ultimo controllo strutturale**, eseguito subito prima di
+`File.Delete`: la finestra temporale in cui una directory potrebbe essere sostituita da una
+junction è stata ridotta al minimo (vedi "Audit pre-distribuzione").
 
 Un file che non supera uno di questi controlli viene **saltato e contato**, mai eliminato.
 
@@ -71,6 +75,65 @@ Un file che non supera uno di questi controlli viene **saltato e contato**, mai 
 - Un errore imprevisto produce un messaggio in italiano, non un crash.
 - Un file bloccato viene saltato e contato.
 
+## Audit di sicurezza pre-distribuzione (2026-10-09)
+
+Revisione indipendente del percorso **scansione → cancellazione** prima di consegnare l'alpha
+ai beta tester. La build precedente è stata conservata prima di ogni modifica
+(`artifacts/audit-baseline/`, SHA-256 `bf33e9cb…`).
+
+### Pericolo identificato e corretto
+
+**Finestra TOCTOU tra il controllo reparse point e la cancellazione.**
+Il controllo sulle junction era eseguito *prima* della lettura di dimensione ed età, quindi
+prima di `File.Delete`. Se una componente del percorso fosse stata sostituita da una junction
+in quell'intervallo, `File.Delete` avrebbe risolto il percorso attraverso il collegamento e
+avrebbe potuto rimuovere un file fuori dalla radice autorizzata.
+
+- **Correzione**: il controllo `HasReparseComponentInsideRoot` è stato spostato in ultima
+  posizione, immediatamente prima della chiamata a `File.Delete`.
+- **Test di regressione**:
+  `SecurityAuditTests.Clean_PathComponentReplacedByJunctionAfterScan_IsSkippedAndTargetSurvives`
+  (sottocartella sostituita da una junction dopo la scansione → elemento saltato, file di
+  destinazione intatto).
+
+### Classificazione dei rischi esaminati
+
+| Rischio | Esito |
+|---|---|
+| Path traversal con `..` | Rifiutato: `Path.GetFullPath` risolve e `IsInsideRoot` nega (test) |
+| Prefisso `\\?\` o `\\.\` | Rifiutato: il confronto con la radice fallisce, fail-safe (test) |
+| Stream dati alternativo (`::$DATA`) | Rifiutato: la normalizzazione fallisce, nessuna eccezione (test) |
+| Spazio o punto finale nel nome | Normalizzato dentro la radice, nessuna fuga (test) |
+| Nome breve 8.3 della radice | `GetFullPath` lo espande al nome lungo: nessuna fuga (verificato a runtime) |
+| Junction o symlink nella directory | Non seguiti in scansione; rilevati di nuovo in cancellazione (test) |
+| File sostituito da directory dopo la scansione | Saltato, contenuto intatto (test) |
+| File toccato dopo la scansione | Saltato come "non conforme all'età" (test) |
+| File eliminato dopo la scansione | Saltato come "non esistente" (test) |
+| Radice stessa passata come elemento | Rifiutata (test) |
+| Elemento fuori radice passato come elemento | Rifiutato, file intatto (test) |
+| Elementi deselezionati | Non arrivano al motore di cancellazione (test GUI + test motore) |
+| Ordinamento della tabella | La selezione resta corretta (test GUI) |
+| File bloccato / in sola lettura | Saltato o conteggiato come errore, operazione prosegue (test) |
+| Cancellazione parziale o annullamento | Cooperativo, nessun tocco sugli elementi residui (test) |
+| Cancellazione di directory | Nessun codice del genere nel motore (test) |
+| Junction sostituita **nell'istante esatto** prima di `File.Delete` | **Rischio residuo non eliminabile** — vedi sotto |
+
+### Rischi residui dichiarati
+
+1. **Finestra TOCTOU residua**: il controllo sul reparse point è l'ultimo prima della
+   cancellazione, ma non è atomicamente accoppiato ad essa. Un processo concorrente con diritti
+   di scrittura sulla stessa cartella temporanea potrebbe teoricamente sostituire una directory
+   con una junction nell'intervallo tra controllo e chiusura della chiamata di sistema.
+   Mitigazione reale: l'attacco richiede un processo già in esecuzione come l'utente, e
+   `File.Delete` cancella il collegamento (non il bersaglio) quando la componente finale è un
+   file reparse point. Eliminare del tutto la finestra richiederebbe l'apertura del file con
+   `FILE_FLAG_OPEN_REPARSE_POINT` via P/Invoke, non inclusa in 0.1.
+2. **Nessuna firma del codice**, nessuna verifica automatica dell'integrità a runtime.
+3. **La conferma è un avviso umano**, non una protezione contro un attaccante locale.
+4. **La cancellazione è definitiva**: non esiste cestino né ripristino.
+5. **Nessun controllo sulla proprietà dei file**: "temporaneo" significa che il file si trova
+   nella cartella temporanea dell'utente e ha più di 24 ore.
+
 ## Segnalazione di vulnerabilità
 
 Progetto alpha locale, senza canale pubblico dedicato. Per segnalare un problema aprire un
@@ -80,14 +143,3 @@ issue indicando:
 - passi per riprodurre;
 - percorso interessato (senza dati personali);
 - cosa ci si aspettava e cosa è successo.
-
-## Limiti dichiarati
-
-1. **Nessuna firma del codice**: l'eseguibile non è firmato digitalmente.
-2. **Nessuna verifica automatica dell'integrità a runtime**: l'integrità del pacchetto è
-   verificabile con `SHA256SUMS.txt`, non dall'applicazione stessa.
-3. **La conferma è un avviso umano, non una protezione contro un attaccante locale**: chi può
-   modificare il processo può anche modificarne il comportamento.
-4. **La cancellazione è definitiva**: non esiste cestino né ripristino.
-5. **Nessun controllo sulla proprietà dei file**: "temporaneo" significa che il file si trova
-   nella cartella temporanea dell'utente e ha più di 24 ore.

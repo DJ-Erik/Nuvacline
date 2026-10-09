@@ -61,13 +61,27 @@ Eseguita sull'eseguibile Release reale, con analisi della vera cartella temporan
 | Nuovi file creati dal programma | Solo il report in `%LOCALAPPDATA%\CleanSlate\reports\` |
 | Contenuto del report | Intestazione attesa, nessun profilo utente |
 
+### Ispezione dell'eseguibile pubblicato (audit 2026-10-09)
+
+Sull'artefatto destinato ai beta tester, non sui sorgenti:
+
+| Controllo | Esito |
+|---|---|
+| Assembly referenziati (riflessione) | Solo `mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms` |
+| Tipi pubblici esportati | 22, tutti di CleanSlate |
+| Nomi di metadati di rete (`WebRequest`, `WebClient`, `Socket`, `Dns`, `HttpClient`, `TcpClient`, `UdpClient`, `ServicePoint`, `Ftp`, `Smtp`) | Nessuno, né in ASCII né in UTF-16 |
+| Nomi di metadati di registro (`RegistryKey`) | Nessuno |
+| Stringhe `http://` presenti | 2, entrambe namespace XML del manifest incorporato (`schemas.microsoft.com/SMI/...`): identificativi, non indirizzi |
+| File di configurazione nel pacchetto | Nessuno (solo `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt`) |
+| Manifest incorporato | `requestedExecutionLevel level="asInvoker" uiAccess="false"` |
+
 ## Limiti dichiarati
 
 1. **Campione di rete**: la verifica runtime misura le connessioni TCP stabilite del processo
    durante una sessione di analisi. Non è una cattura pacchetti a livello di rete: un'ipotetica
    trasmissione ultrabreve tra due campionamenti non sarebbe rilevata. La verifica statica
-   (nessuna API di rete nei sorgenti, nessuna assembly di rete referenziata) copre questa
-   lacuna in modo indipendente.
+   (nessuna API di rete nei sorgenti, nessuna assembly di rete referenziata, nessun nome di
+   metadato di rete nell'eseguibile pubblicato) copre questa lacuna in modo indipendente.
 2. **Ambiente di test**: le verifiche sono state eseguite su questo PC, con questa versione
    dell'eseguibile. Ogni nuova build andrebbe riverificata.
 3. **Il report è un file di testo**: resta sul PC dell'utente ed è leggibile da chiunque abbia
@@ -76,6 +90,9 @@ Eseguita sull'eseguibile Release reale, con analisi della vera cartella temporan
    può toccare chiavi di `HKCU\Software\Microsoft\.NETFramework`. Sono scritture del runtime
    Microsoft, non di CleanSlate; il confronto delle chiavi su queste aree è mostrato come nota
    nella verifica.
+5. **Nessuna pulizia automatizzata durante i test**: la verifica end-to-end esegue solo
+   l'analisi sui file temporanei reali, mai la cancellazione, per non eliminare dati
+   dell'utente durante un test.
 
 ## Contatto
 

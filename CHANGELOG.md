@@ -27,8 +27,9 @@ Prima versione alpha, portatile e offline.
   mostrato nella finestra e apribile con un pulsante; formati TXT e JSON; la radice temporanea
   è sostituita dal segnaposto `%TEMP%` e il profilo utente non compare.
 - **Suite di test automatica** (`src/CleanSlate.Tests`): runner equivalente a xUnit scritto in
-  C# (nessuna dipendenza di terze parti), **63 test** su percorsi, scanner, cancellazione,
-  report e privacy statica, con fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\`.
+  C# (nessuna dipendenza di terze parti), **73 test** su percorsi, scanner, cancellazione,
+  report, privacy statica e race condition, con fixture autoconsistente in
+  `%LOCALAPPDATA%\CleanSlateTests\`.
 - **Script di build** `build.ps1` / `build.common.ps1` che compilano con `csc.exe` in-box di
   .NET Framework, eseguono i test e producono il pacchetto portable in
   `artifacts\alpha-0.1\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt`.
@@ -37,6 +38,26 @@ Prima versione alpha, portatile e offline.
   processo, l'assenza di connessioni TCP in uscita e l'invariabilità di registro, servizi,
   attività pianificate e avvio automatico. **31 controlli**.
 - **Documentazione**: `README.md`, `SECURITY.md`, `PRIVACY.md`, `TASKS.md`.
+
+### Sicurezza
+
+- Audit di sicurezza pre-distribuzione eseguito prima della consegna ai beta tester.
+  La build precedente è conservata in `artifacts/audit-baseline/`.
+- **Correzione**: il controllo sulle componenti di reparse point nel motore di pulizia era
+  eseguito prima della lettura di dimensione ed età, e quindi con una finestra TOCTOU verso
+  `File.Delete`. È stato spostato a essere l'ultimo controllo strutturale prima della
+  cancellazione (`TempFileCleaner.ProcessOne`).
+- **Test di regressione aggiuntivi** (`SecurityAuditTests`): file toccato, sostituito da una
+  directory o attraversato da una junction sostituita dopo la scansione; selezione
+  deselezionata non passata al motore; selezione stabile dopo l'ordinamento della tabella;
+  percorsi con prefissi `\\?\` e `\\.\`, stream dati alternativo e nomi con spazio o punto
+  finale.
+- **Ispezione della build pubblicata**: soltanto assembly del framework .NET, nessun nome di
+  metadato di rete o di registro, `http://` presente esclusivamente come namespace XML del
+  manifest, manifest `asInvoker` con `uiAccess="false"`.
+- Rischi residui dichiarati in `SECURITY.md`: finestra TOCTOU residua fino a `File.Delete`,
+  nessuna firma del codice, nessuna cattura pacchetti, pulizia reale non automatizzata nei
+  test end-to-end.
 
 ### Dettagli tecnici
 

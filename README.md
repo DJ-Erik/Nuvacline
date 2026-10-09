@@ -72,7 +72,7 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 63 test
+│   └── CleanSlate.Tests/  runner di test + 73 test
 ├── artifacts/alpha-0.1/   pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
@@ -102,7 +102,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **63/63 superati**, ripetuto su 3 esecuzioni consecutive |
+| Suite di test | **73/73 superati**, ripetuto su 3 esecuzioni consecutive |
 | Verifica end-to-end GUI (`verify.ps1`) | **31/31 controlli superati** |
 | Rete (campionamento runtime) | **0 connessioni TCP in uscita** su almeno 40 campionamenti durante l'analisi reale |
 | Registro di sistema | Invariato prima/dopo l'esecuzione |
@@ -110,14 +110,18 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
 | Pacchetto | `artifacts\alpha-0.1\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
+| Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
 ## Copertura dei test
 
 | Area | Test |
 |---|---|
-| Sicurezza dei percorsi (containment, `..`, reparse point, radice) | `PathSafetyTests` |
+| Sicurezza dei percorsi (containment, `..`, reparse point, radice, `\\?\`, ADS) | `PathSafetyTests`, `SecurityAuditTests` |
 | Scanner in sola lettura, limiti d'età, dimensioni, annullamento, ACL, junction | `ScannerTests` |
 | Cancellazione prudente, file bloccati, percorsi esterni, report | `CleanerTests` |
+| Race condition: file toccato/sostituito dopo la scansione, junction sostituita | `SecurityAuditTests` |
+| Selezione: solo gli elementi selezionati arrivano alla cancellazione, anche dopo l'ordinamento | `SecurityAuditTests` |
 | Report TXT/JSON, sanitizzazione percorsi, assenza di scritture | `ReportTests` |
 | Privacy statica (nessuna API di rete/registro/telemetria/shell distruttiva) | `PrivacyTests` |
 
