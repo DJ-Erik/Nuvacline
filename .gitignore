@@ -1,6 +1,7 @@
 bin/
 tests/bin/
 artifacts/
+tests/qa-run.log
 *.user
 *.suo
 .vs/

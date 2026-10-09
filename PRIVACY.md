@@ -90,9 +90,13 @@ Sull'artefatto destinato ai beta tester, non sui sorgenti:
    può toccare chiavi di `HKCU\Software\Microsoft\.NETFramework`. Sono scritture del runtime
    Microsoft, non di CleanSlate; il confronto delle chiavi su queste aree è mostrato come nota
    nella verifica.
-5. **Nessuna pulizia automatizzata durante i test**: la verifica end-to-end esegue solo
-   l'analisi sui file temporanei reali, mai la cancellazione, per non eliminare dati
-   dell'utente durante un test.
+5. **Pulizia reale solo su fixture sintetici**: la validazione pratica pre-beta
+   (`tests/qa-practical.ps1`) esegue l'analisi sul vero `%TEMP%` dell'utente senza mai
+   cancellare file preesistenti; la cancellazione viene esercitata soltanto su file sintetici
+   creati dallo stesso script (prefisso `cleanslate-qa-`, marker di contenuto, dimensioni
+   note) e su un sandbox dedicato usato come TMP del processo GUI. Il clic "Sì" sulla GUI
+   reale non è automatizzato; il motore di produzione viene invece esercitato con una lista
+   esplicita di quegli elementi sintetici.
 
 ## Contatto
 

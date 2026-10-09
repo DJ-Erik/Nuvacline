@@ -133,6 +133,30 @@ avrebbe potuto rimuovere un file fuori dalla radice autorizzata.
 4. **La cancellazione è definitiva**: non esiste cestino né ripristino.
 5. **Nessun controllo sulla proprietà dei file**: "temporaneo" significa che il file si trova
    nella cartella temporanea dell'utente e ha più di 24 ore.
+6. **Deselezione GUI non automatable in ambiente con sessione bloccata**: con la schermata di
+   blocco in primo piano i click fisici non raggiungono la griglia e i messaggi sintetici non
+   attivano il toggle della checkbox. La semantica "solo gli elementi selezionati vengono
+   cancellati" è verificata dai test `SecurityAuditTests.Ui_*` e dalla validazione pratica al
+   motore di produzione con lista esplicita (`tests/qa-practical.ps1`).
+
+### Validazione pratica pre-beta (2026-10-10)
+
+Oltre alla revisione statica e ai test automatici, il percorso reale è stato eseguito con
+l'eseguibile pubblicato su vero `%TEMP%` e su un sandbox GUI, usando solo file sintetici
+identificabili (`tests/qa-practical.ps1`, esecuzione `f0382398`: **OK**):
+
+- analisi reale del `%TEMP%` dell'utente **senza cancellare nulla** (3234 preesistenti, 0 persi);
+- fixture con junction, file bloccato, file recente, file fuori radice;
+- regole di età e rifiuto della junction verificati sullo scanner di produzione;
+- gate di conferma "No" verificato sulla GUI reale (nessuna cancellazione dopo la risposta);
+- cancellazione eseguita dal **motore di produzione** su vero `%TEMP%` con lista esplicita:
+  solo il selezionato eliminato, gli altri intatti (hash), bloccato→`Failed`, junction→
+  `SkippedReparse`, fuori radice→`SkippedOutsideRoot`;
+- residui rimossi dopo verifica di nome/percorso/contenuto; snapshot `%TEMP%` invariato
+  (3234 → 3234); SHA-256 del pacchetto invariato.
+
+La deselezione della singola riga nella GUI **non è stata eseguita** (sessione bloccata):
+vedi "Rischi residui dichiarati" punto 6.
 
 ## Segnalazione di vulnerabilità
 

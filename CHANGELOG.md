@@ -56,8 +56,14 @@ Prima versione alpha, portatile e offline.
   metadato di rete o di registro, `http://` presente esclusivamente come namespace XML del
   manifest, manifest `asInvoker` con `uiAccess="false"`.
 - Rischi residui dichiarati in `SECURITY.md`: finestra TOCTOU residua fino a `File.Delete`,
-  nessuna firma del codice, nessuna cattura pacchetti, pulizia reale non automatizzata nei
-  test end-to-end.
+  nessuna firma del codice, nessuna cattura pacchetti, deselezione della singola riga GUI
+  non automatable in ambiente con sessione bloccata.
+- **Validazione pratica pre-beta** (`tests/qa-practical.ps1`): il percorso reale analisi →
+  conferma → cancellazione è stato eseguito sull'eseguibile pubblicato, su vero `%TEMP%` e
+  su un sandbox GUI, con solo file sintetici identificabili. Analisi senza cancellare i
+  preesistenti, regole di età, junction, file bloccato e fuori radice verificati; gate di
+  conferma "No" verificato sulla GUI; cancellazione esercitata al motore di produzione con
+  lista esplicita; residui 0; SHA-256 del pacchetto invariato.
 
 ### Dettagli tecnici
 

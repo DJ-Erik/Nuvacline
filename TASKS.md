@@ -177,6 +177,45 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
 
 ---
 
+## FASE 11 — Validazione pratica pre-beta (2026-10-10)
+
+Esecuzione del percorso reale **analisi → conferma → (cancellazione)** con l'eseguibile
+pubblicato (`artifacts/alpha-0.1/CleanSlate.exe`), su vero `%TEMP%` e su un sandbox usato
+come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
+`cleanslate-qa-<id>`, marker `CLEANSLATE-QA-<id>`, dimensioni distinte). Script:
+`tests/qa-practical.ps1` (eseguito via `tests/qa-run.ps1`, log in `tests/qa-run.log`).
+
+**Id esecuzione di riferimento: `f0382398` — esito: OK (tutti i controlli superati).**
+
+### Test superati
+
+| Area | Criterio (A–I) | Evidenza |
+|---|---|---|
+| A | Analisi reale del vero `%TEMP%` senza cancellare nulla | 3234 file preesistenti → 0 scomparsi; report scritto; finestra chiusa senza residui |
+| B | Fixture sintetiche con nomi univoci e contenuto noto | 8 file nel vero `%TEMP%`, 5 nel sandbox, 1 vittima esterna, 1 junction; tutti con marker verificato prima della rimozione |
+| C | Regole di età (≥24 h) | Scanner reale propone solo i 5 vecchi della fixture; il recente (500 B) risulta "Scartati"; delta GUI reale ≥ +5 proposti / +1 scartato |
+| D | Percorso analisi → conferma → cancellazione | GUI sandbox: analisi (4 proposti, 1 scartato), conferma "Eliminare 4 file … 1000 B", risposta **No** → nessuna cancellazione; cancellazione poi eseguita dal **motore di produzione** su vero `%TEMP%` con lista esplicita (stesso codice che la GUI alimenta con `GetSelectedItems`) |
+| E | Solo il selezionato eliminato, gli altri intatti | Motore: `selected.txt` eliminato; `old`, `unselected`, `modified`, `locked`, recente e vittima fuori radice **invariati** (hash) |
+| F | File bloccato (`FileShare.None`) | `locked.txt` sopravvissuto con esito `Failed` in entrambi gli ambienti (vero `%TEMP%` e sandbox) |
+| G | Regola dei 24 h | `recent.txt` mai proposto né toccato |
+| H | Report/riepilogo con soli conteggi | Report reale scritto e privo di profilo utente; riepilogo pulizia motore con conteggi attesi (1 eliminato, 1 errore); e2e **31/31**, suite **73/73** |
+| I | Nessun residuo, build conservata | Snapshot `%TEMP%` 3234 → 3234; 0 residui `cleanslate-qa-*`/`CleanSlateQa*`; 0 processi; SHA-256 pacchetto invariato (`0F74C687…`) |
+
+### Test non eseguiti (e perché)
+
+| Test | Motivo |
+|---|---|
+| Deselezione della singola riga nella GUI reale | Sessione Windows bloccata (schermata di blocco in primo piano): i click del mouse vengono intercettati dal lock screen e non raggiungono la griglia; i messaggi sintetici (`WM_LBUTTONDOWN`, spazio, focus) non attivano il toggle della checkbox WinForms. La selezione parziale è verificata dai test `SecurityAuditTests.Ui_*` e dal motore con lista esplicita |
+| Clic "Sì" sulla conferma GUI | Conseguenza del punto precedente: senza deselezione, premere Sì avrebbe cancellato anche `unselected.txt` del sandbox, falsando la prova di sopravvivenza. Il gate "No" è comunque verificato; la cancellazione è verificata al motore di produzione |
+
+### Limiti residui confermati
+
+- Finestra TOCTOU fino a `File.Delete` (come già dichiarato in `SECURITY.md`);
+- Campionamento rete ≠ cattura pacchetti (come già dichiarato in `PRIVACY.md`);
+- Deselezione GUI non automatable in questo ambiente (sessione bloccata + griglia non esposta).
+
+---
+
 ## Criteri di completamento 0.1 Alpha
 
 | # | Criterio | Stato | Evidenza |
@@ -185,7 +224,7 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
 | 2 | L'analisi funziona | [x] | `verify.ps1`: stato "Analisi completata." + riepilogo letto |
 | 3 | I risultati sono visualizzati correttamente | [x] | `verify.ps1`: righe in tabella (3109) = "Proposti" del riepilogo (3109) |
 | 4 | La selezione degli elementi funziona | [x]* | `verify.ps1`: pulsante pulizia **disabilitato** senza selezione e **abilitato** dopo l'analisi. `SecurityAuditTests.Ui_*`: la riga deselezionata non arriva al motore e sopravvive, e la selezione resta corretta anche dopo l'ordinamento. Il clic sulla singola checkbox **non** è automatabile: la griglia WinForms non espone le righe come elementi UIA |
-| 5 | La pulizia richiede conferma esplicita | [x]* | Dialogo di conferma con numero/byte e default **No**; **non eseguito in automatico** per non cancellare i file temporanei reali dell'utente. Il motore di cancellazione è coperto da `CleanerTests` e `SecurityAuditTests` su fixture dedicati |
+| 5 | La pulizia richiede conferma esplicita | [x]* | Dialogo di conferma con numero/byte e default **No**; nella validazione pratica il gate **No** è verificato sulla GUI reale (nessuna cancellazione). La cancellazione effettiva è eseguita dal motore di produzione su vero `%TEMP%` con lista esplicita (stesso codice della GUI); il clic **Sì** non è automatizzato per non deselezionare la riga in ambiente bloccato |
 | 6 | I percorsi esterni vengono rifiutati | [x] | `PathSafetyTests` + `SecurityAuditTests.PathSafety_*` (`..`, reparse, radice, `\\?\`, `\\.\`, ADS, spazi/punti finali) |
 | 7 | Gli errori non provocano crash non gestiti | [x] | `ScannerTests`/`CleanerTests` (ACL negata, file bloccato, cartella inesistente) |
 | 8 | La reportistica funziona | [x] | `ReportTests` + `verify.ps1` (file creato, contenuto conforme, percorso mostrato in GUI) |
@@ -219,15 +258,16 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
    dal codice; la cosa è verificata da test automatici sulle sorgenti.
 5. `tests/verify.ps1` usa `BM_CLICK` sull'handle del controllo perché WinForms su .NET
    Framework espone i controlli tramite il bridge MSAA e non offre `InvokePattern`.
-6. **Nessuna pulizia automatizzata contro il vero `%TEMP%`**: la verifica end-to-end esegue
-   soltanto l'analisi. Avviare in automatico la cancellazione sui file temporanei reali
-   dell'utente eliminerebbe dati dell'utente durante un test, quindi il flusso di conferma è
-   dichiarato ma non automatizzato; il motore di cancellazione è invece esercitato a fondo
-   dall'unità di test su fixture create apposta.
-7. **Selezione riga per riga non automatabile**: la griglia WinForms non espone le righe come
-   elementi di automazione, quindi il clic su una singola checkbox non è coperto dalla verifica
-   end-to-end. È invece coperto da test che esercitano lo stesso codice della GUI
-   (`SecurityAuditTests.Ui_*`).
+6. **Nessuna pulizia automatizzata via clic "Sì" nella GUI**: la validazione pratica esercita
+   l'analisi reale, il gate di conferma "No" e la cancellazione al motore di produzione su
+   vero `%TEMP%` con lista esplicita di elementi sintetici. Il clic "Sì" sulla GUI reale non
+   è automatizzato: richiederebbe la deselezione della riga, non eseguibile in ambiente con
+   sessione bloccata (vedi punto 7).
+7. **Selezione riga per riga non automatabile in questo ambiente**: la griglia WinForms non
+   espone le righe come elementi di automazione, e con la sessione Windows bloccata i click
+   fisici vengono intercettati dal lock screen mentre i messaggi sintetici non attivano il
+   toggle della checkbox. La semantica della selezione è coperta dai test
+   `SecurityAuditTests.Ui_*` e dalla prova al motore con lista esplicita.
 8. **Finestra TOCTOU residua verso `File.Delete`**: il controllo sul reparse point è l'ultimo
    prima della cancellazione ma non è atomicamente accoppiato ad essa. Un processo concorrente
    con diritti di scrittura sulla stessa cartella potrebbe sostituire una directory con una
@@ -251,6 +291,7 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
 | Suite di test | **73/73** su 3 esecuzioni consecutive |
 | Residui del fixture di test dopo la suite | **0** |
 | Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** su `bin/Release` e di nuovo **31/31** sull'exe del pacchetto |
+| Validazione pratica pre-beta (`tests/qa-practical.ps1`) | **OK** su vero `%TEMP%` e sandbox GUI (id `f0382398`); 0 residui, 0 file preesistenti persi, hash pacchetto invariato; deselezione GUI non eseguita (sessione bloccata), verificata al motore |
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
@@ -280,7 +321,8 @@ conservata in `artifacts/audit-baseline/` prima di ogni modifica.
 | Cancellazione parziale / annullamento | Test | Cooperativo, nessun tocco sui residui | `Clean_CancellationIsCooperative…`, `Scan_CancellationDuringScan…` | — |
 | Build pubblicata: dipendenze | Riflessione sull'exe pubblicato | Solo assembly del framework .NET | elenco assembly referenziati | — |
 | Build pubblicata: rete/registro | Scansione nomi di metadati e stringhe | Nessun nome sospeto; `http://` solo namespace XML del manifest | audit build | Non è una cattura pacchetti |
-| Eseguibile reale | `tests\verify.ps1` | 31/31 su `bin/Release` e 31/31 sull'exe del pacchetto | log della verifica | Pulizia reale non automatizzata |
+| Eseguibile reale | `tests\verify.ps1` | 31/31 su `bin/Release` e 31/31 sull'exe del pacchetto | log della verifica | — |
+| Validazione pratica pre-beta | `tests\qa-practical.ps1` su vero `%TEMP%` + sandbox GUI | **OK**: analisi, età, junction, blocco, fuori radice, residui 0, build conservata | `tests/qa-run.log` (id `f0382398`) | Deselezione GUI non eseguita (sessione bloccata); cancellazione verificata al motore di produzione |
 
 ## Prossimo passo concreto (se la sessione dovesse interrompersi)
 
