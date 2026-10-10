@@ -65,10 +65,35 @@ namespace CleanSlate.UI
             Font = SystemFonts.MessageBoxFont;
             KeyPreview = false;
 
+            // Icona della finestra (e del taskbar): e' la stessa icona dell'eseguibile,
+            // incorporata in fase di compilazione con /win32icon. Uso puramente cosmetico.
+            Bitmap logoBitmap = null;
+            try
+            {
+                Icon appIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+                if (appIcon != null)
+                {
+                    Icon = appIcon;
+                    logoBitmap = appIcon.ToBitmap();
+                }
+            }
+            catch (Exception)
+            {
+                // L'assenza dell'icona non deve mai impedire l'avvio.
+            }
+
+            PictureBox logoBox = new PictureBox();
+            logoBox.Name = "picLogo";
+            logoBox.Location = new Point(14, 8);
+            logoBox.Size = new Size(32, 32);
+            logoBox.SizeMode = PictureBoxSizeMode.Normal;
+            if (logoBitmap != null) logoBox.Image = logoBitmap;
+            Controls.Add(logoBox);
+
             _titleLabel = new Label();
             _titleLabel.Name = "lblTitle";
             _titleLabel.AutoSize = true;
-            _titleLabel.Location = new Point(14, 12);
+            _titleLabel.Location = new Point(54, 13);
             _titleLabel.Font = new Font(Font.FontFamily, 14f, FontStyle.Bold);
             _titleLabel.Text = "CleanSlate " + AppInfo.VersionText;
             Controls.Add(_titleLabel);

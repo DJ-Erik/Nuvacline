@@ -32,6 +32,8 @@ function Invoke-AppBuild([string]$root, [string]$configuration) {
     if ($sources.Count -eq 0) { throw 'Nessuna sorgente applicativa trovata.' }
 
     $manifest = Join-Path $root 'src\CleanSlate\app.manifest'
+    $icon = Join-Path $root 'assets\logo\CleanSlate.ico'
+    if (-not (Test-Path -LiteralPath $icon)) { throw "Icona dell'applicazione non trovata: $icon" }
     $cscArgs = @(
         '/nologo',
         '/noconfig',
@@ -43,7 +45,8 @@ function Invoke-AppBuild([string]$root, [string]$configuration) {
         '/r:System.Core.dll',
         '/r:System.Drawing.dll',
         '/r:System.Windows.Forms.dll',
-        "/win32manifest:$manifest"
+        "/win32manifest:$manifest",
+        "/win32icon:$icon"
     )
     if ($configuration -eq 'Release') {
         $cscArgs += '/optimize+'

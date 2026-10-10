@@ -38,6 +38,15 @@ Prima versione alpha, portatile e offline.
   processo, l'assenza di connessioni TCP in uscita e l'invariabilità di registro, servizi,
   attività pianificate e avvio automatico. **31 controlli**.
 - **Documentazione**: `README.md`, `SECURITY.md`, `PRIVACY.md`, `TASKS.md`.
+- **Logo ufficiale integrato** (`assets/logo/`): icona multirisoluzione `CleanSlate.ico`
+  (16/32/48/256 px, generata dal logo quadrato originale con trasparenza), alta risoluzione
+  `CleanSlate.png` (1600×1600, trasparente), varianti orizzontale e monocromatica originali.
+  L'icona è incorporata nell'eseguibile (`/win32icon`), impostata come icona della finestra
+  principale e mostrata accanto al titolo; il README visualizza la versione orizzontale.
+  Nessuna dipendenza aggiuntiva, nessuna risorsa esterna a runtime.
+  SHA-256 dell'eseguibile dopo l'integrazione: `8e14e3c0085fc2c2…`
+  (aggiornato in `artifacts/alpha-0.1/SHA256SUMS.txt`; come già documentato, la build
+  non è riproducibile bit per bit, quindi l'hash è valido per questo pacchetto).
 
 ### Sicurezza
 

@@ -1,5 +1,7 @@
 # CleanSlate 0.1.0-alpha
 
+<img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
+
 CleanSlate è un pulitore di file temporanei per Windows, **portatile, offline, in italiano**.
 
 Analizza la cartella temporanea dell'utente corrente, mostra gli elementi recuperabili in una
@@ -67,6 +69,8 @@ dell'utente corrente che sono più vecchi di 24 ore.
 cleanslate/
 ├── build.ps1              build + test + pacchetto portable
 ├── build.common.ps1       funzioni di compilazione condivise
+├── assets/
+│   └── logo/              logo ufficiale (CleanSlate.ico/png, varianti orizzontale e monocromatica)
 ├── tests/
 │   ├── run-tests.ps1      compila ed esegue la suite di test
 │   └── verify.ps1         verifica end-to-end della GUI reale
