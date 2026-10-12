@@ -31,6 +31,7 @@ namespace CleanSlate.Tests
                 Assert.Equal(0L, result.EstimatedBytes, "Nessun byte atteso.");
                 Assert.Equal(0, result.Errors, "Nessun errore atteso.");
                 Assert.Equal(0, result.FilesScanned, "Nessun file da analizzare.");
+                Assert.Equal(1, result.DirectoriesVisited, "Solo la radice deve essere conteggiata.");
             }
         }
 
@@ -146,6 +147,7 @@ namespace CleanSlate.Tests
 
                 Assert.Equal(3, result.Items.Count, "Tutti i livelli devono essere raggiunti.");
                 Assert.Equal(60L, result.EstimatedBytes, "Somma dei byte attesa.");
+                Assert.Equal(4, result.DirectoriesVisited, "Radice + a + b + c: quattro cartelle percorse.");
             }
         }
 
@@ -202,8 +204,10 @@ namespace CleanSlate.Tests
                 options.CancellationToken = cts.Token;
 
                 bool cancelledOnce = false;
+                int lastDirectories = -1;
                 options.Progress = delegate(ScanProgress progress)
                 {
+                    lastDirectories = progress.DirectoriesVisited;
                     if (cancelledOnce) return;
                     cancelledOnce = true;
                     cts.Cancel();
@@ -216,6 +220,7 @@ namespace CleanSlate.Tests
                 Assert.True(result.Cancelled, "Il risultato deve indicare l'annullamento.");
                 Assert.True(result.Items.Count < 6, "La scansione deve fermarsi prima della fine.");
                 Assert.True(result.Items.Count >= 1, "I risultati parziali devono essere conservati.");
+                Assert.True(lastDirectories >= 1, "Il contatore delle cartelle esplorate deve essere reale.");
                 cts.Dispose();
             }
         }
@@ -296,6 +301,25 @@ namespace CleanSlate.Tests
                 Assert.True(calls >= 2, "Il callback deve essere invocato per ogni file.");
                 Assert.Equal(2, lastFound, "Il contatore dei file trovati deve essere reale.");
                 Assert.Equal(2, result.Items.Count, "Due file attesi.");
+            }
+        }
+
+        [Test]
+        public void Scan_DirectoriesVisited_CountsEveryEnteredDirectoryAndSkipsJunctions()
+        {
+            using (Fixture fx = new Fixture())
+            {
+                fx.CreateFile("base.tmp", 10);
+                fx.CreateFile(Path.Combine("a", "b", "annidato.tmp"), 20);
+                string link = Path.Combine(fx.Root, "collegamento");
+                Fixture.CreateJunction(link, fx.Outside);
+
+                ScanResult result = new TempFolderScanner().Scan(OptionsFor(fx.Root));
+
+                Assert.True(result.Success, "La scansione deve riuscire.");
+                // Radice + a + b: il collegamento junction non viene percorso e non è contato.
+                Assert.Equal(3, result.DirectoriesVisited, "Tre cartelle percorse attese (senza la junction).");
+                Assert.True(result.DirectoriesSkipped >= 1, "La junction deve risultare saltata.");
             }
         }
     }

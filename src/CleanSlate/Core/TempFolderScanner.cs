@@ -66,6 +66,7 @@ namespace CleanSlate.Core
                 return;
             }
 
+            result.DirectoriesVisited++;
             ScanFiles(root, directory, cutoffUtc, options, result);
             if (result.Cancelled) return;
 
@@ -242,7 +243,7 @@ namespace CleanSlate.Core
             progress.FilesScanned = result.FilesScanned;
             progress.FilesFound = result.Items.Count;
             progress.BytesFound = result.EstimatedBytes;
-            progress.DirectoriesVisited = 0;
+            progress.DirectoriesVisited = result.DirectoriesVisited;
             progress.CurrentDirectory = directory;
             try { options.Progress(progress); }
             catch (ObjectDisposedException) { }

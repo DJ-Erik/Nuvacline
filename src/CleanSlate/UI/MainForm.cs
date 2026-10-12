@@ -563,8 +563,8 @@ namespace CleanSlate.UI
         {
             if (_busy)
             {
-                SetStatus(string.Format("Analisi in corso... file trovati: {0} ({1})",
-                    progress.FilesFound, ByteFormatter.Format(progress.BytesFound)));
+                SetStatus(string.Format("Analisi in corso... file trovati: {0} ({1}) · cartelle esplorate: {2}",
+                    progress.FilesFound, ByteFormatter.Format(progress.BytesFound), progress.DirectoriesVisited));
             }
         }
 

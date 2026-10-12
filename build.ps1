@@ -31,7 +31,7 @@ if (-not $SkipTests) {
 }
 
 if ($Package) {
-    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'alpha-0.3.5'
+    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'alpha-0.3.6'
     if (-not $artifacts.StartsWith($Root, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Percorso degli artefatti non valido.'
     }
@@ -45,7 +45,7 @@ if ($Package) {
     Copy-Item -LiteralPath $appExe -Destination (Join-Path $artifacts 'CleanSlate.exe') -Force
 
     $readme = @"
-CleanSlate 0.3.5
+CleanSlate 0.3.6
 ==================
 
 COSA FA
@@ -107,7 +107,7 @@ Nessun componente di terze parti e' incluso. Vedere LICENSE.txt.
     Set-Content -LiteralPath (Join-Path $artifacts 'README.txt') -Value $readme -Encoding UTF8
 
     $license = @"
-CleanSlate 0.3.5 - note su licenze e dipendenze
+CleanSlate 0.3.6 - note su licenze e dipendenze
 ==================================================
 
 Dipendenze di terze parti incluse nella distribuzione: NESSUNA.

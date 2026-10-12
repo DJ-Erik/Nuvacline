@@ -53,6 +53,7 @@ namespace CleanSlate.Core
                 sb.AppendLine("File esclusi dalla soglia  : " + data.FilesExcludedByAge);
                 sb.AppendLine("File scartati              : " + data.FilesSkipped);
                 sb.AppendLine("Cartelle non percorse      : " + data.DirectoriesSkipped);
+                sb.AppendLine("Cartelle esplorate         : " + data.DirectoriesVisited);
                 sb.AppendLine("Errori di lettura          : " + data.ScanErrors);
                 if (data.FilesSelected > 0)
                     sb.AppendLine("File selezionati per la pulizia: " + data.FilesSelected);
@@ -122,6 +123,7 @@ namespace CleanSlate.Core
                 AppendNumber(sb, 2, "fileEsclusiDallaSoglia", data.FilesExcludedByAge, true);
                 AppendNumber(sb, 2, "fileScartati", data.FilesSkipped, true);
                 AppendNumber(sb, 2, "cartelleNonPercorse", data.DirectoriesSkipped, true);
+                AppendNumber(sb, 2, "cartelleEsplorate", data.DirectoriesVisited, true);
                 AppendNumber(sb, 2, "erroriLettura", data.ScanErrors, true);
                 if (data.FilesSelected > 0)
                     AppendNumber(sb, 2, "fileSelezionatiPerLaPulizia", data.FilesSelected, true);

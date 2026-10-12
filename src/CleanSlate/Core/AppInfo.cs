@@ -26,7 +26,7 @@ namespace CleanSlate.Core
             }
             catch (Exception)
             {
-                return "0.3.5";
+                return "0.3.6";
             }
         }
     }

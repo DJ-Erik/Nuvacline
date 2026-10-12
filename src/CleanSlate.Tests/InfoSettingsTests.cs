@@ -169,21 +169,21 @@ namespace CleanSlate.Tests
         #region Versione
 
         [Test]
-        public void CanonicalVersion_Is_0_3_5_AndUsedEverywhere()
+        public void CanonicalVersion_Is_0_3_6_AndUsedEverywhere()
         {
-            Assert.Equal("0.3.5", AppInfo.VersionText,
-                "La versione canonica del prodotto deve essere 0.3.5.");
+            Assert.Equal("0.3.6", AppInfo.VersionText,
+                "La versione canonica del prodotto deve essere 0.3.6.");
 
             Exception failure = null;
             RunInSta(delegate
             {
                 using (MainForm form = new MainForm())
                 {
-                    Assert.Equal("CleanSlate 0.3.5", form.Text,
-                        "Il titolo della finestra deve riportare la versione 0.3.5.");
+                    Assert.Equal("CleanSlate 0.3.6", form.Text,
+                        "Il titolo della finestra deve riportare la versione 0.3.6.");
                     Label title = GetField<Label>(form, "_titleLabel");
-                    Assert.Equal("CleanSlate 0.3.5", title.Text,
-                        "L'etichetta del titolo deve riportare la versione 0.3.5.");
+                    Assert.Equal("CleanSlate 0.3.6", title.Text,
+                        "L'etichetta del titolo deve riportare la versione 0.3.6.");
                 }
             }, out failure);
             if (failure != null) throw failure;

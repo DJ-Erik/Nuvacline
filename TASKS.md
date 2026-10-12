@@ -1,4 +1,4 @@
-# TASKS — CleanSlate 0.3.5
+# TASKS — CleanSlate 0.3.6
 
 Checklist operativa. Ogni voce riporta lo **stato reale** verificato, non l'intenzione.
 
@@ -275,17 +275,35 @@ Revisione sistematica di ogni modulo sorgente dopo il rilascio 0.3.5 (commit `6e
 - [ ] Restano ambientali, in attesa di sessione sbloccata: 5 `RowContextMenuTests`
       (clipboard negata da LogonUI/LockApp: `OpenClipboard` E_ACCESSDENIED).
 
+---
+
+## FASE 14 — Conteggio cartelle esplorate (0.3.6, 2026-10-13)
+
+Rilascio di pulizia emerso dall'audit FASE 13: nessun difetto corretto, solo il
+completamento di `DirectoriesVisited`, campo presente nel modello di avanzamento ma
+sempre 0 e mai letto.
+
+- [x] `ScanResult.DirectoriesVisited`: conta la radice e ogni sottocartella effettivamente
+      percorsa; junction e cartelle inaccessibili restano fuori dal conteggio (riga
+      `DirectoriesSkipped` invariata).
+- [x] Avanzamento in tempo reale: l'etichetta di stato durante l'analisi mostra
+      "cartelle esplorate: N" accanto ai file trovati.
+- [x] Report locale: nuova riga "Cartelle esplorate" (TXT) e chiave `cartelleEsplorate`
+      (JSON), accanto a "cartelle non percorse".
+- [x] Test: 1 nuovo `Scan_DirectoriesVisited_CountsEveryEnteredDirectoryAndSkipsJunctions`
+      più asserzioni estese su radice vuota, annullamento e report; suite 158 → **159**.
+- [x] Bump versione 0.3.6 (AssemblyInfo, manifest, AppInfo, ReportBuilder, test di
+      versione, build.ps1, verify.ps1, qa-practical, docs) e pacchetto
+      `artifacts/alpha-0.3.6/` (i precedenti `alpha-0.3` e `alpha-0.3.5` restano intatti).
+- [x] Verifica end-to-end `verify.ps1` sull'exe del pacchetto 0.3.6: **41/41**.
+
 ### Pianificazione release successive (semver)
 
-Nessun difetto ⇒ nessun rilascio correttivo obbligato. Candidati per la prossima
-incremento, in attesa di conferma sull'estensione di contratto:
-
-- **0.3.6 (patch)**: rimuovere/capire `DirectoriesVisited` (completare il conteggio
-  cartelle nell'avanzamento scansione). Nessun impatto utente.
 - **0.4.0 (minor)**: rimozione prudente delle **cartelle vuote** residue sotto la radice
   dopo la pulizia (stesse regole di sicurezza: solo dentro radice, mai reparse, mai la
   radice, cancellabile). Cambia il contratto "rimuove file" in "rimuove file e cartelle
   vuote residue": richiede conferma esplicita.
+- Restano ambientali, in attesa di sessione sbloccata: 5 `RowContextMenuTests` clipboard.
 
 ---
 
@@ -359,7 +377,7 @@ incremento, in attesa di conferma sull'estensione di contratto:
 | Verifica | Risultato |
 |---|---|
 | Compilazione Release x64 | `bin/Release/CleanSlate.exe` |
-| Suite di test | **153/158** (145 di 0.3.0 + 13 nuovi `ThemeTests`; 5 `RowContextMenuTests` bloccati dall'ambiente sessione bloccata → clipboard non disponibile, non difetti di prodotto) |
+| Suite di test | **154/159** (145 di 0.3.0 + 13 `ThemeTests` + 1 conteggio cartelle 0.3.6; 5 `RowContextMenuTests` bloccati dall'ambiente sessione bloccata → clipboard non disponibile, non difetti di prodotto) |
 | Residui del fixture di test dopo la suite | **0** |
 | Verifica end-to-end GUI (`tests/verify.ps1`) | **41/41** su `bin/Release` e di nuovo **41/41** sull'exe del pacchetto |
 | Finestra Informazioni e menu Impostazioni | **19 test** (`InfoSettingsTests`) + sezione `3b` di `verify.ps1`: apertura/chiusura della finestra Informazioni con lettura del contenuto, apertura del menu e chiusura con Esc |
@@ -370,7 +388,7 @@ incremento, in attesa di conferma sull'estensione di contratto:
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
-| Pacchetto portable | `artifacts/alpha-0.3.5/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
+| Pacchetto portable | `artifacts/alpha-0.3.6/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
 | Pacchetto == `bin/Release` | SHA-256 identici nella stessa sessione di build (build non riproducibile) |
 | Build pre-audit conservata | `artifacts/audit-baseline/` (SHA-256 `bf33e9cb…`) |
 | Documentazione | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |

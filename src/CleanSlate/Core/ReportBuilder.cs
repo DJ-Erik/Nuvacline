@@ -32,6 +32,7 @@ namespace CleanSlate.Core
         public int FilesSelected { get; set; }
         public string MinAgeText { get; set; }
         public int DirectoriesSkipped { get; set; }
+        public int DirectoriesVisited { get; set; }
         public int ScanErrors { get; set; }
         public long EstimatedBytes { get; set; }
         public List<string> ScanErrorMessages { get; set; }
@@ -73,6 +74,7 @@ namespace CleanSlate.Core
                 data.FilesSkipped = scan.FilesSkipped;
                 data.FilesExcludedByAge = scan.FilesExcludedByAge;
                 data.DirectoriesSkipped = scan.DirectoriesSkipped;
+                data.DirectoriesVisited = scan.DirectoriesVisited;
                 data.ScanErrors = scan.Errors;
                 data.EstimatedBytes = scan.EstimatedBytes;
                 for (int i = 0; i < scan.ErrorMessages.Count && i < 20; i++)
@@ -105,7 +107,7 @@ namespace CleanSlate.Core
             data.DurationText = duration.TotalSeconds.ToString("N1", System.Globalization.CultureInfo.CurrentCulture) + " s";
 
             if (data.ScanAvailable && !data.ScanCancelled && data.FilesEligible == 0 && data.ScanErrors == 0)
-                data.Notes.Add("Non sono stati trovati file temporanei recuperabili secondo le regole della versione 0.3.5.");
+                data.Notes.Add("Non sono stati trovati file temporanei recuperabili secondo le regole della versione 0.3.6.");
             if (data.ScanAvailable && data.ScanCancelled)
                 data.Notes.Add("L'analisi è stata annullata: i valori si riferiscono ai risultati parziali.");
             if (data.CleanAvailable && data.CleanCancelled)

@@ -17,6 +17,7 @@ namespace CleanSlate.Tests
             scan.FilesEligible = 3;
             scan.FilesSkipped = 4;
             scan.DirectoriesSkipped = 1;
+            scan.DirectoriesVisited = 5;
             scan.Errors = 1;
             scan.EstimatedBytes = 4096;
             scan.Duration = TimeSpan.FromSeconds(1.5);
@@ -110,6 +111,7 @@ namespace CleanSlate.Tests
                 Assert.Contains("CleanSlate", text, "Deve contenere il nome prodotto.");
                 Assert.Contains(AppInfo.VersionText, text, "Deve contenere la versione.");
                 Assert.Contains("File analizzati", text, "Deve contenere i conteggi dell'analisi.");
+                Assert.Contains("Cartelle esplorate", text, "Deve dichiarare le cartelle percorse.");
                 Assert.Contains("File eliminati", text, "Deve contenere i risultati della pulizia.");
                 Assert.Contains("Spazio effettivamente liberato", text, "Deve dichiarare lo spazio realmente rimosso.");                Assert.Contains("connessione di rete", text, "Deve dichiarare il comportamento offline.");
             }
@@ -153,6 +155,7 @@ namespace CleanSlate.Tests
                 Assert.Contains("\"prodotto\": \"CleanSlate\"", json, "Chiave prodotto attesa.");
                 Assert.Contains("\"versione\": \"" + AppInfo.VersionText + "\"", json, "Chiave versione attesa.");
                 Assert.Contains("\"fileEliminati\": 2", json, "Contatore JSON atteso.");
+                Assert.Contains("\"cartelleEsplorate\": 5", json, "Contatore JSON delle cartelle atteso.");
                 Assert.Contains("\"spazioRecuperabileStimatoByte\": 4096", json, "Byte JSON attesi.");
                 Assert.Contains("\\\"virgolette\\\"", json, "Le virgolette devono essere scappate.");
                 Assert.Contains("\\n", json, "I ritorni a capo devono essere scappati.");

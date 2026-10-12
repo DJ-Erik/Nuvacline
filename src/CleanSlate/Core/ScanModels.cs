@@ -98,6 +98,9 @@ namespace CleanSlate.Core
         /// <summary>Cartelle non percorse (reparse point o errori di accesso).</summary>
         public int DirectoriesSkipped { get; set; }
 
+        /// <summary>Cartelle effettivamente percorse, radice inclusa.</summary>
+        public int DirectoriesVisited { get; set; }
+
         public int Errors { get; set; }
         public List<string> ErrorMessages { get; set; }
         public List<FileItem> Items { get; set; }

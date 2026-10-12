@@ -1,4 +1,4 @@
-# CleanSlate 0.3.5
+# CleanSlate 0.3.6
 
 <img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
 
@@ -96,8 +96,8 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 158 test
-├── artifacts/alpha-0.3.5/ pacchetto distribuibile
+│   └── CleanSlate.Tests/  runner di test + 159 test
+├── artifacts/alpha-0.3.6/ pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -111,7 +111,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\alpha-0.3.5
+# compilazione + test + pacchetto portable in artifacts\alpha-0.3.6
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -126,7 +126,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **153/158 superati** (145 di 0.3.0 invariati + 13 nuovi `ThemeTests`); i 5 residui sono `RowContextMenuTests` bloccati dall'ambiente (sessione bloccata → clipboard non disponibile), non difetti di prodotto |
+| Suite di test | **154/159 superati** (145 di 0.3.0 + 13 `ThemeTests` + 1 conteggio cartelle 0.3.6); i 5 residui sono `RowContextMenuTests` bloccati dall'ambiente (sessione bloccata → clipboard non disponibile), non difetti di prodotto |
 | Verifica end-to-end GUI (`verify.ps1`) | **41/41 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
@@ -135,7 +135,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\alpha-0.3.5\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\alpha-0.3.6\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -144,11 +144,11 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Area | Test |
 |---|---|
 | Sicurezza dei percorsi (containment, `..`, reparse point, radice, `\\?\`, ADS) | `PathSafetyTests`, `SecurityAuditTests` |
-| Scanner in sola lettura, limiti d'età, dimensioni, annullamento, ACL, junction | `ScannerTests` |
+| Scanner in sola lettura, limiti d'età, dimensioni, annullamento, ACL, junction, cartelle esplorate | `ScannerTests` |
 | Cancellazione prudente, file bloccati, percorsi esterni, report | `CleanerTests` |
 | Race condition: file toccato/sostituito dopo la scansione, junction sostituita | `SecurityAuditTests` |
 | Selezione: solo gli elementi selezionati arrivano alla cancellazione, anche dopo l'ordinamento | `SecurityAuditTests` |
-| Report TXT/JSON, sanitizzazione percorsi, assenza di scritture | `ReportTests` |
+| Report TXT/JSON, sanitizzazione percorsi, assenza di scritture, cartelle esplorate | `ReportTests` |
 | Privacy statica (nessuna API di rete/telemetria/shell distruttiva; registro accessibile solo in lettura per il tema) | `PrivacyTests` |
 | Menu contestuale: nome/cartella copiati, visibilità solo su righe valide, spunti invariati, Esplora `/select` senza eseguire il file | `RowContextMenuTests` |
 | Selezione massiva: Seleziona/Deseleziona tutto, conteggio, dimensione, nuova scansione, righe non-file, sync con motore e menu contestuale | `BulkSelectionTests` |

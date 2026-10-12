@@ -2,6 +2,34 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.3.6] — 2026-10-13
+
+Pulizia post-audit. Completa il conteggio delle cartelle esplorate durante l'analisi,
+già dichiarato nel modello di avanzamento ma mai calcolato; nessun altro cambiamento.
+
+### Aggiunto
+
+- **Conteggio reale delle cartelle esplorate**: `ScanResult.DirectoriesVisited` conta la
+  radice e ogni sottocartella effettivamente percorsa (le junction e le cartelle con errore
+  di accesso non vengono conteggiate). Il valore compare nell'avanzamento in tempo reale
+  ("cartelle esplorate: N") e nel report locale, sia in testo (`Cartelle esplorate`) sia in
+  JSON (`cartelleEsplorate`), affatto al già presente "cartelle non percorse".
+- 1 nuovo test `Scan_DirectoriesVisited_CountsEveryEnteredDirectoryAndSkipsJunctions`
+  più asserzioni estese su radice, annullamento e report; la suite passa da **158** a **159**.
+
+### Aggiornato
+
+- Versione ufficiale del prodotto portata da `0.3.5` a `0.3.6`:
+  `AssemblyVersion`/`AssemblyFileVersion` `0.3.6.0`, `AssemblyInformationalVersion` `0.3.6`,
+  identità e descrizione del manifest, documentazione, test di versione e verifica.
+- Percorso del pacchetto portable: `artifacts/alpha-0.3.6/`.
+
+### Note
+
+- Rilascio di pulizia emerso dall'autodisciplina post-0.3.5: nessun difetto corretto,
+  solo completamento di un campo dichiarato e mai implementato (`DirectoriesVisited`
+  era sempre 0).
+
 ## [0.3.5] — 2026-10-12
 
 Tema chiaro/scuro automatico. L'interfaccia segue le preferenze di Windows e si aggiorna
