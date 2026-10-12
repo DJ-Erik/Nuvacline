@@ -1,4 +1,4 @@
-# TASKS — CleanSlate 0.2.0
+# TASKS — CleanSlate 0.3.0
 
 Checklist operativa. Ogni voce riporta lo **stato reale** verificato, non l'intenzione.
 
@@ -286,9 +286,10 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Verifica | Risultato |
 |---|---|
 | Compilazione Release x64 | `bin/Release/CleanSlate.exe` |
-| Suite di test | **111/111** su 3 esecuzioni consecutive (73/73 nella validazione pre-beta, +11 con il menu contestuale, +13 con la selezione massiva, +14 con la soglia di scansione) |
+| Suite di test | **145/145** su 2 esecuzioni consecutive (111 alla validazione pre-beta, 126 in 0.2.0, +19 `InfoSettingsTests` in 0.3.0) |
 | Residui del fixture di test dopo la suite | **0** |
-| Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** su `bin/Release` e di nuovo **31/31** sull'exe del pacchetto |
+| Verifica end-to-end GUI (`tests/verify.ps1`) | **41/41** su `bin/Release` e di nuovo **41/41** sull'exe del pacchetto |
+| Finestra Informazioni e menu Impostazioni | **19 test** (`InfoSettingsTests`) + sezione `3b` di `verify.ps1`: apertura/chiusura della finestra Informazioni con lettura del contenuto, apertura del menu e chiusura con Esc |
 | Validazione pratica pre-beta (`tests/qa-practical.ps1`) | **OK** su vero `%TEMP%` e sandbox GUI (id `f0382398`); 0 residui, 0 file preesistenti persi, hash pacchetto invariato; deselezione GUI non eseguita (sessione bloccata), verificata al motore |
 | Menu contestuale risultati (clic destro) | **11 test** (`RowContextMenuTests`) + probe GUI reale sul pacchetto: menu su riga valida, tre voci eseguite (nome in appunti, cartella in appunti, `Esplora /select` su Temp), nessun menu su intestazione/spazi, spunti invariati |
 | Selezione massiva (Seleziona/Deseleziona tutto) | **13 test** (`BulkSelectionTests`) + probe GUI reale sul pacchetto: pulsanti visibili e funzionanti su 3108 file reali, deselezione → pulizia disabilitata + "Nessun file selezionato", rieselezione → pulizia abilitata + conteggio/dimensione, righe non-file ignorate, nuova scansione senza selezioni obsolete |
@@ -296,7 +297,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
-| Pacchetto portable | `artifacts/alpha-0.2/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
+| Pacchetto portable | `artifacts/alpha-0.3/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
 | Pacchetto == `bin/Release` | SHA-256 identici nella stessa sessione di build (build non riproducibile) |
 | Build pre-audit conservata | `artifacts/audit-baseline/` (SHA-256 `bf33e9cb…`) |
 | Documentazione | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
@@ -329,7 +330,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 
 ```powershell
 cd C:\Users\User\Documents\Experiments\cleanslate
-powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 111/111 attesi
-powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 31/31 attesi
+powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 145/145 attesi
+powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 41/41 attesi
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package    # pacchetto portable
 ```

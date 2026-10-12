@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Security;
@@ -33,19 +34,28 @@ namespace CleanSlate.Core
     }
 
     /// <summary>
-    /// Impostazione locale della soglia d'età minima dei file proposti dalla scansione.
+    /// Impostazioni locali di CleanSlate: soglia d'età minima dei file proposti dalla
+    /// scansione e conservazione dei report generati.
     ///
     /// Persistenza: un singolo file di testo in
-    /// %LOCALAPPDATA%\CleanSlate\settings.txt con la riga "MinAgeHours=&lt;ore&gt;".
+    /// %LOCALAPPDATA%\CleanSlate\settings.txt con le righe "MinAgeHours=&lt;ore&gt;" e
+    /// "KeepReports=&lt;0|1&gt;". Le chiavi sono indipendenti: la scrittura di una
+    /// preserva tutte le altre.
     /// Nessuna dipendenza esterna, nessuna rete, nessun registro di Windows.
     ///
-    /// Tutte le letture falliscono in modo sicuro sul valore predefinito (24 ore):
-    /// file mancante, corrotto, non leggibile o con valore non previsto.
+    /// Tutte le letture falliscono in modo sicuro sui valori predefiniti (24 ore e
+    /// conservazione attiva): file mancante, corrotto, non leggibile o con valore
+    /// non previsto.
     /// </summary>
     public static class ScanSettings
     {
         public const int DefaultHours = 24;
+
+        /// <summary>Conservazione dei report attiva finché l'utente non la disattiva.</summary>
+        public const bool DefaultKeepReports = true;
+
         private const string KeyMinAgeHours = "MinAgeHours";
+        private const string KeyKeepReports = "KeepReports";
 
         /// <summary>Opzioni disponibili, in ordine di visualizzazione.</summary>
         public static ScanThresholdOption[] CreateOptions()
@@ -153,25 +163,123 @@ namespace CleanSlate.Core
         /// <summary>
         /// Salva la preferenza nel percorso indicato. Ore non previste
         /// vengono normalizzate al predefinito prima della scrittura.
+        /// Le altre chiavi già presenti nel file (es. KeepReports) vengono preservate.
         /// Restituisce false se la scrittura non riesce (l'app continua comunque).
         /// </summary>
         public static bool SaveTo(string path, int hours)
         {
             if (!IsAllowedHours(hours)) hours = DefaultHours;
+            return WriteSetting(path, KeyMinAgeHours,
+                hours.ToString(CultureInfo.InvariantCulture));
+        }
 
+        /// <summary>Carica la conservazione dei report dal percorso predefinito.</summary>
+        public static bool LoadKeepReports()
+        {
+            return LoadKeepReportsFrom(SettingsPath);
+        }
+
+        /// <summary>
+        /// Carica la conservazione dei report dal percorso indicato. Qualsiasi problema
+        /// (file assente, riga malformata, valore non valido, errori di I/O) produce il
+        /// valore predefinito: conservazione attiva.
+        /// </summary>
+        public static bool LoadKeepReportsFrom(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                    return DefaultKeepReports;
+
+                string[] lines = File.ReadAllLines(path);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i].Trim();
+                    if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) continue;
+
+                    int separator = line.IndexOf('=');
+                    if (separator <= 0) continue;
+
+                    string key = line.Substring(0, separator).Trim();
+                    string value = line.Substring(separator + 1).Trim();
+                    if (!string.Equals(key, KeyKeepReports, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    if (string.Equals(value, "0", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(value, "false", StringComparison.OrdinalIgnoreCase))
+                        return false;
+
+                    // Valore presente ma non valido: fallback sulla conservazione attiva.
+                    return true;
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (SecurityException) { }
+
+            return DefaultKeepReports;
+        }
+
+        /// <summary>Salva la conservazione dei report nel percorso predefinito.</summary>
+        public static bool SaveKeepReports(bool keepReports)
+        {
+            return SaveKeepReportsTo(SettingsPath, keepReports);
+        }
+
+        /// <summary>
+        /// Salva la conservazione dei report nel percorso indicato, preservando le
+        /// altre chiavi già presenti nel file. Restituisce false se la scrittura
+        /// non riesce.
+        /// </summary>
+        public static bool SaveKeepReportsTo(string path, bool keepReports)
+        {
+            return WriteSetting(path, KeyKeepReports, keepReports ? "1" : "0");
+        }
+
+        /// <summary>
+        /// Sostituisce (o aggiunge) la prima occorrenza della chiave indicata,
+        /// mantenendo intatte tutte le altre righe del file. La mancanza del file
+        /// produce un file contente la sola chiave scritta.
+        /// </summary>
+        private static bool WriteSetting(string path, string key, string value)
+        {
             try
             {
                 string directory = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                     Directory.CreateDirectory(directory);
 
-                File.WriteAllText(path,
-                    KeyMinAgeHours + "=" + hours.ToString(CultureInfo.InvariantCulture));
+                List<string> lines = new List<string>();
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                {
+                    string[] existing = File.ReadAllLines(path);
+                    for (int i = 0; i < existing.Length; i++) lines.Add(existing[i]);
+                }
+
+                bool replaced = false;
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    string line = lines[i].Trim();
+                    if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) continue;
+
+                    int separator = line.IndexOf('=');
+                    if (separator <= 0) continue;
+
+                    string existingKey = lines[i].Substring(0, separator).Trim();
+                    if (!string.Equals(existingKey, key, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    lines[i] = key + "=" + value;
+                    replaced = true;
+                    break;
+                }
+                if (!replaced) lines.Add(key + "=" + value);
+
+                File.WriteAllLines(path, lines.ToArray());
                 return true;
             }
             catch (IOException) { return false; }
             catch (UnauthorizedAccessException) { return false; }
             catch (SecurityException) { return false; }
+            catch (ArgumentException) { return false; }
         }
 
         private static bool IsAllowedHours(int hours)

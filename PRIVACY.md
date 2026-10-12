@@ -1,6 +1,6 @@
 # Privacy di CleanSlate
 
-Documento relativo alla versione **0.2.0**.
+Documento relativo alla versione **0.3.0**.
 
 ## In una frase
 

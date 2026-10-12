@@ -1,4 +1,4 @@
-# CleanSlate 0.2.0
+# CleanSlate 0.3.0
 
 <img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
 
@@ -10,6 +10,9 @@ produce un **report locale** il cui percorso è mostrato nella finestra. Comandi
 tutto** e **Deseleziona tutto** permettono di spuntare o azzerare l'intera lista con un solo
 clic, mentre un **menu contestuale** (clic destro su una riga) permette di copiare il nome o
 la cartella del file e di aprirlo in Esplora file selezionandolo, senza mai eseguirlo.
+Il pulsante **?** apre la finestra **Informazioni** (scopo, privacy, avvertenze) e il pulsante
+**⚙** apre le **Impostazioni**, dove si attiva o disattiva la conservazione dei report e si
+apre la cartella che li contiene.
 
 CleanSlate **non promette di accelerare il computer**. Rimuove soltanto file temporanei
 dell'utente corrente che sono più vecchi di 24 ore (soglia configurabile da interfaccia:
@@ -35,6 +38,8 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
 3. Esaminare l'elenco, selezionare o deselezionare gli elementi desiderati.
 4. Premere **Pulisci selezionati** e confermare nella finestra di conferma.
 5. **Apri report** apre il report locale generato al termine dell'analisi o della pulizia.
+6. **?** mostra le informazioni sul prodotto; **⚙** consente di attivare o disattivare la
+   conservazione dei report e di aprire la cartella che li contiene.
 
 **Annullare** è sempre disponibile: l'analisi e la pulizia sono cooperativamente annullabili.
 
@@ -54,7 +59,8 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
 2. **File recenti**: gli elementi modificati nelle ultime 24 ore sono scartati per impostazione
    predefinita. La soglia è configurabile dall'interfaccia (1 ora, 6 ore, 12 ore, 24 ore,
    48 ore, 7 giorni, nessuna soglia) e viene salvata in
-   `%LOCALAPPDATA%\CleanSlate\settings.txt`.
+   `%LOCALAPPDATA%\CleanSlate\settings.txt`, dove viene conservata anche la preferenza
+   di salvataggio dei report (`KeepReports`).
 3. **File bloccati**: vengono saltati e conteggiati come errori, mai forzati.
 4. **Percorsi lunghi**: il manifest dichiara `longPathAware`, ma il runtime .NET Framework può
    comunque rifiutare alcuni percorsi oltre 260 caratteri: in tal caso l'elemento viene saltato
@@ -83,8 +89,8 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 111 test
-├── artifacts/alpha-0.2/   pacchetto distribuibile
+│   └── CleanSlate.Tests/  runner di test + 145 test
+├── artifacts/alpha-0.3/   pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -98,7 +104,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\alpha-0.2
+# compilazione + test + pacchetto portable in artifacts\alpha-0.3
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -113,8 +119,8 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **111/111 superati** (97 precedenti invariati + 14 nuovi), ripetuto su 3 esecuzioni consecutive |
-| Verifica end-to-end GUI (`verify.ps1`) | **31/31 controlli superati** sull'exe del pacchetto |
+| Suite di test | **145/145 superati** (126 di 0.2.0 invariati + 19 nuovi), ripetuto su 2 esecuzioni consecutive |
+| Verifica end-to-end GUI (`verify.ps1`) | **41/41 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
 | Rete (campionamento runtime) | **0 connessioni TCP in uscita** su almeno 40 campionamenti durante l'analisi reale |
@@ -122,7 +128,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\alpha-0.2\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\alpha-0.3\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -140,6 +146,8 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Menu contestuale: nome/cartella copiati, visibilità solo su righe valide, spunti invariati, Esplora `/select` senza eseguire il file | `RowContextMenuTests` |
 | Selezione massiva: Seleziona/Deseleziona tutto, conteggio, dimensione, nuova scansione, righe non-file, sync con motore e menu contestuale | `BulkSelectionTests` |
 | Soglia di scansione: default 24 ore, mapping opzioni, persistenza/ricaricamento, fallback, esclusione/inclusione file, wiring GUI→scanner, nessun auto-scan, non retroattività, conferma | `ScanThresholdTests` |
+| Riepilogo di scansione e conteggi (scartati/esclusi dalla soglia, selezionati, report coerente) | `ScanSummaryTests` |
+| Informazioni e impostazioni: finestra modale, versione, testo privacy, menu ⚙, spunta conservazione report, persistenza KeepReports, default/valori non validi, report su richiesta, errori di salvataggio, nessuna cancellazione retroattiva | `InfoSettingsTests` |
 
 I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il
 reale temporaneo dell'utente) e lo rimuovono integralmente, ACL comprese.

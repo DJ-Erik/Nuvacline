@@ -24,13 +24,14 @@ namespace CleanSlate.UI
         private readonly TempFileCleaner _cleaner = new TempFileCleaner();
 
         private Label _titleLabel;
-        private Label _subtitleLabel;
         private Button _btnAnalyze;
         private Button _btnClean;
         private Button _btnCancel;
         private Button _btnReport;
         private Button _btnSelectAll;
         private Button _btnDeselectAll;
+        private Button _btnInfo;
+        private Button _btnSettings;
         private Label _lblSelection;
         private Label _statusLabel;
         private ProgressBar _progress;
@@ -57,11 +58,20 @@ namespace CleanSlate.UI
         private ContextMenuStrip _rowMenu;
         private FileItem _rowMenuTarget;
         private bool[] _rowMenuCheckSnapshot;
+        private ContextMenuStrip _settingsMenu;
+        private ToolStripMenuItem _miKeepReports;
+        private ToolStripSeparator _settingsSeparator;
+        private ToolStripMenuItem _miOpenReportsFolder;
+        private bool _keepReports = ScanSettings.DefaultKeepReports;
         private Action<string> _notifyUser;
         private Action<string> _setClipboard;
         private Action<ProcessStartInfo> _startProcess;
         private Func<ScanThresholdOption> _loadSettings;
         private Action<int> _saveSettings;
+        private Func<bool> _loadKeepReports;
+        private Func<bool, bool> _saveKeepReports;
+        private Func<string> _reportsFolder;
+        private Action _showInfoDialog;
 
         public MainForm()
         {
@@ -74,7 +84,12 @@ namespace CleanSlate.UI
             _startProcess = delegate(ProcessStartInfo info) { Process.Start(info); };
             _loadSettings = delegate { return ScanSettings.Load(); };
             _saveSettings = delegate(int hours) { ScanSettings.Save(hours); };
+            _loadKeepReports = delegate { return ScanSettings.LoadKeepReports(); };
+            _saveKeepReports = delegate(bool keep) { return ScanSettings.SaveKeepReports(keep); };
+            _reportsFolder = delegate { return ReportsFolderDefault(); };
+            _showInfoDialog = delegate { ShowInfoDialog(); };
             LoadThresholdSetting();
+            LoadKeepReportsSetting();
             UpdateSummaryLabel();
             UpdateReportLabel();
             UpdateSelectionState();
@@ -126,16 +141,11 @@ namespace CleanSlate.UI
             _titleLabel.Text = "CleanSlate " + AppInfo.VersionText;
             Controls.Add(_titleLabel);
 
-            _subtitleLabel = new Label();
-            _subtitleLabel.Name = "lblSubtitle";
-            _subtitleLabel.AutoSize = false;
-            _subtitleLabel.Location = new Point(14, 40);
-            _subtitleLabel.Size = new Size(ClientSize.Width - 28, 32);
-            _subtitleLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            _subtitleLabel.ForeColor = Color.DimGray;
-            _subtitleLabel.Text = "Analisi in sola lettura e rimozione dei file temporanei dell'utente corrente. "
-                + "Nessuna connessione di rete, nessun dato raccolto, nessuna modifica al registro, nessun avvio automatico.";
-            Controls.Add(_subtitleLabel);
+            // Comandi di accesso: Informazioni (?) e Impostazioni (ingranaggio).
+            // Sono collocati in alto a destra, fuori dalla riga dei comandi di analisi,
+            // e restano agganciati al bordo destro durante il ridimensionamento.
+            _btnInfo = CreateIconButton("btnInfo", "?", 864, 10, OnInfoClick);
+            _btnSettings = CreateIconButton("btnSettings", "⚙", 898, 10, OnSettingsClick);
 
             _btnAnalyze = CreateButton("btnAnalyze", "Analizza", 14, 78, 110, OnAnalyzeClick);
             _btnClean = CreateButton("btnClean", "Pulisci selezionati", 132, 78, 160, OnCleanClick);
@@ -198,6 +208,16 @@ namespace CleanSlate.UI
                 + "entra in vigore alla prossima analisi. \"Nessuna soglia temporale\" "
                 + "include anche i file appena creati.");
             _cboThreshold.SelectedIndexChanged += OnThresholdChanged;
+
+            // L'ingranaggio usa un carattere tipografico dedicato quando disponibile;
+            // il fallback del sistema non deve impedire la creazione della finestra.
+            try { _btnSettings.Font = new Font("Segoe UI Symbol", 12f); }
+            catch (Exception) { }
+            _thresholdToolTip.SetToolTip(_btnInfo,
+                "Informazioni su CleanSlate: scopo, privacy e avvertenze.");
+            _thresholdToolTip.SetToolTip(_btnSettings,
+                "Impostazioni: conservazione dei report e apertura della cartella dei report.");
+            BuildSettingsMenu();
 
             _progress = new ProgressBar();
             _progress.Name = "progress";
@@ -266,9 +286,8 @@ namespace CleanSlate.UI
             _footnoteLabel.Size = new Size(ClientSize.Width - 28, 34);
             _footnoteLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _footnoteLabel.ForeColor = Color.DimGray;
-            _footnoteLabel.Text = "CleanSlate analizza tutti i file nel perimetro selezionato, ma propone soltanto "
-                + "quelli che rispettano la soglia temporale. Puoi deselezionare qualsiasi file prima della pulizia. "
-                + "I file eliminati non sono recuperabili.";
+            _footnoteLabel.Text = "Prima della pulizia puoi deselezionare qualsiasi file. "
+                + "La cancellazione richiede una conferma e i file eliminati non sono recuperabili.";
             Controls.Add(_footnoteLabel);
         }
 
@@ -280,6 +299,24 @@ namespace CleanSlate.UI
             button.Location = new Point(x, y);
             button.Size = new Size(width, 30);
             button.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            button.UseVisualStyleBackColor = true;
+            button.Click += onClick;
+            Controls.Add(button);
+            return button;
+        }
+
+        /// <summary>
+        /// Pulsante quadrato di servizio (Informazioni e Impostazioni): resta
+        /// agganciato al bordo destro della finestra durante il ridimensionamento.
+        /// </summary>
+        private Button CreateIconButton(string name, string text, int x, int y, EventHandler onClick)
+        {
+            Button button = new Button();
+            button.Name = name;
+            button.Text = text;
+            button.Location = new Point(x, y);
+            button.Size = new Size(28, 28);
+            button.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             button.UseVisualStyleBackColor = true;
             button.Click += onClick;
             Controls.Add(button);
@@ -501,7 +538,7 @@ namespace CleanSlate.UI
                 catch (ObjectDisposedException) { }
                 SetBusy(false);
                 UpdateSummaryLabel();
-                if (_lastScan != null) GenerateReport();
+                if (_lastScan != null) GenerateReport(false);
             }
         }
 
@@ -690,7 +727,7 @@ namespace CleanSlate.UI
                 catch (ObjectDisposedException) { }
                 SetBusy(false);
                 UpdateSummaryLabel();
-                if (_lastClean != null) GenerateReport();
+                if (_lastClean != null) GenerateReport(false);
             }
         }
 
@@ -824,7 +861,9 @@ namespace CleanSlate.UI
 
             if (string.IsNullOrEmpty(_lastReportPath) || !File.Exists(_lastReportPath))
             {
-                GenerateReport();
+                // La richiesta dell'utente genera comunque un report, anche quando
+                // la conservazione automatica è stata disattivata.
+                GenerateReport(true);
                 if (string.IsNullOrEmpty(_lastReportPath))
                 {
                     ShowMessageOwner(
@@ -841,16 +880,28 @@ namespace CleanSlate.UI
         /// Scrive il report locale al termine di un'analisi o di una pulizia e ne mostra il
         /// percorso nella finestra. Il file resta sulla macchina dell'utente: non viene inviato
         /// a nessuno e non viene scritto in cartelle condivise o sincronizzate.
+        ///
+        /// La scrittura automatica avviene solo se la conservazione dei report è attiva
+        /// (impostazione predefinita); una richiesta esplicita dell'utente genera invece
+        /// sempre un file. La disattivazione non cancella mai i report già scritti.
         /// </summary>
-        private void GenerateReport()
+        private void GenerateReport(bool explicitRequest)
         {
             if (_lastScan == null && _lastClean == null) return;
 
+            if (!explicitRequest && !_keepReports)
+            {
+                // Conservazione disattivata: nessuna scrittura e nessuna cancellazione.
+                _lastReportPath = null;
+                UpdateReportLabel();
+                return;
+            }
+
             try
             {
-                string folder = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "CleanSlate", "reports");
+                string folder = _reportsFolder != null
+                    ? _reportsFolder()
+                    : ReportsFolderDefault();
                 Directory.CreateDirectory(folder);
 
                 string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
@@ -881,6 +932,14 @@ namespace CleanSlate.UI
             }
         }
 
+        /// <summary>Cartella predefinita dei report locali.</summary>
+        private static string ReportsFolderDefault()
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "CleanSlate", "reports");
+        }
+
         private void UpdateReportLabel()
         {
             if (_reportLabel == null) return;
@@ -889,6 +948,12 @@ namespace CleanSlate.UI
             {
                 _reportLabel.Text = "Report: " + _lastReportPath;
                 _reportLabel.ForeColor = Color.DimGray;
+            }
+            else if (!_keepReports)
+            {
+                _reportLabel.Text = "Report: conservazione disattivata. "
+                    + "Il pulsante \u00abApri report\u00bb genera un report su richiesta.";
+                _reportLabel.ForeColor = Color.Gray;
             }
             else
             {
@@ -916,6 +981,236 @@ namespace CleanSlate.UI
             catch (Exception ex)
             {
                 ShowMessageOwner("Impossibile aprire il report: " + ex.Message, "CleanSlate", MessageBoxIcon.Error);
+            }
+        }
+
+        #endregion
+
+        #region Informazioni e impostazioni
+
+        /// <summary>
+        /// Carica la preferenza di conservazione dei report tramite il seam dedicato,
+        /// così i test non toccano mai il file reale dell'utente. Qualsiasi errore
+        /// ricade sul valore predefinito: conservazione attiva.
+        /// </summary>
+        private void LoadKeepReportsSetting()
+        {
+            bool keep = ScanSettings.DefaultKeepReports;
+            try
+            {
+                if (_loadKeepReports != null) keep = _loadKeepReports();
+            }
+            catch (Exception)
+            {
+                keep = ScanSettings.DefaultKeepReports;
+            }
+
+            _keepReports = keep;
+            if (_miKeepReports != null) _miKeepReports.Checked = keep;
+            UpdateReportLabel();
+        }
+
+        private void OnInfoClick(object sender, EventArgs e)
+        {
+            if (_showInfoDialog != null) _showInfoDialog();
+            else ShowInfoDialog();
+        }
+
+        private void ShowInfoDialog()
+        {
+            using (Form dialog = BuildInfoForm())
+            {
+                dialog.ShowDialog(this);
+            }
+        }
+
+        /// <summary>
+        /// Finestra modale con le informazioni sul prodotto: nessuna rete, nessuna
+        /// azione, solo testo e il pulsante OK.
+        /// </summary>
+        private Form BuildInfoForm()
+        {
+            Form dialog = new Form();
+            dialog.Name = "dlgInfo";
+            dialog.Text = "Informazioni su CleanSlate";
+            dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
+            dialog.MaximizeBox = false;
+            dialog.MinimizeBox = false;
+            dialog.ShowInTaskbar = false;
+            dialog.StartPosition = FormStartPosition.CenterParent;
+            dialog.Font = Font;
+
+            Label body = new Label();
+            body.Name = "lblInfoBody";
+            body.AutoSize = true;
+            body.MaximumSize = new Size(440, 0);
+            body.Location = new Point(16, 16);
+            body.Text = BuildInfoText();
+            dialog.Controls.Add(body);
+
+            Button ok = new Button();
+            ok.Name = "btnInfoOk";
+            ok.Text = "OK";
+            ok.Size = new Size(90, 30);
+            ok.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            ok.DialogResult = DialogResult.OK;
+            dialog.Controls.Add(ok);
+
+            int width = Math.Max(440, body.Width) + 32;
+            int height = body.Bottom + 16 + ok.Height + 16;
+            dialog.ClientSize = new Size(width, height);
+            ok.Location = new Point(width - ok.Width - 16, height - ok.Height - 16);
+
+            dialog.AcceptButton = ok;
+            dialog.CancelButton = ok;
+            return dialog;
+        }
+
+        /// <summary>Testo della finestra Informazioni.</summary>
+        private string BuildInfoText()
+        {
+            return "CleanSlate " + AppInfo.VersionText + "\r\n\r\n"
+                + "Scopo\r\n"
+                + "CleanSlate analizza in sola lettura la cartella temporanea dell'utente corrente "
+                + "e propone la rimozione dei file più vecchi della soglia scelta. Nessuna modifica "
+                + "viene apportata senza una conferma esplicita.\r\n\r\n"
+                + "Gratuito ed essenziale\r\n"
+                + "Un singolo file eseguibile, senza installazione, senza componenti aggiuntivi, "
+                + "senza servizi e senza dipendenze di terze parti.\r\n\r\n"
+                + "Privacy\r\n"
+                + "Nessuna connessione di rete, nessun dato raccolto, nessuna modifica al registro, "
+                + "nessun avvio automatico. Analisi, riepilogo e report restano su questo computer.\r\n\r\n"
+                + "Funzionamento\r\n"
+                + "Analisi, filtro temporale, anteprima dei risultati, selezione riga per riga e "
+                + "conferma prima di ogni pulizia. Il report locale viene scritto nella cartella "
+                + "dei report solo se la conservazione è attiva oppure su richiesta.\r\n\r\n"
+                + "Avvertenza\r\n"
+                + "I file eliminati non sono recuperabili.";
+        }
+
+        private void BuildSettingsMenu()
+        {
+            _settingsMenu = new ContextMenuStrip();
+            _settingsMenu.Name = "menuSettings";
+
+            _miKeepReports = new ToolStripMenuItem("Conserva i report generati");
+            _miKeepReports.Name = "miKeepReports";
+            _miKeepReports.CheckOnClick = true;
+            _miKeepReports.Checked = _keepReports;
+            _miKeepReports.ToolTipText =
+                "Se attiva, ogni analisi o pulizia scrive un report nella cartella dei report. "
+                + "Se disattiva nessun report viene scritto automaticamente: \"Apri report\" "
+                + "ne genera uno su richiesta.";
+            _miKeepReports.Click += OnKeepReportsClick;
+
+            _settingsSeparator = new ToolStripSeparator();
+            _settingsSeparator.Name = "sepSettingsReports";
+
+            _miOpenReportsFolder = new ToolStripMenuItem("Apri cartella dei report");
+            _miOpenReportsFolder.Name = "miOpenReportsFolder";
+            _miOpenReportsFolder.Click += OnOpenReportsFolderClick;
+
+            _settingsMenu.Items.Add(_miKeepReports);
+            _settingsMenu.Items.Add(_settingsSeparator);
+            _settingsMenu.Items.Add(_miOpenReportsFolder);
+        }
+
+        /// <summary>
+        /// Allinea il menu allo stato corrente: spunta della conservazione e visibilità
+        /// della voce "Apri cartella dei report" (presente solo se la cartella esiste).
+        /// La proprietà usata è Available, che resta leggibile anche con il menu chiuso.
+        /// </summary>
+        private void RefreshSettingsMenu()
+        {
+            if (_miKeepReports != null) _miKeepReports.Checked = _keepReports;
+
+            bool folderExists = ReportsFolderExists();
+            if (_miOpenReportsFolder != null)
+            {
+                _miOpenReportsFolder.Available = folderExists;
+                _miOpenReportsFolder.Enabled = folderExists;
+            }
+            if (_settingsSeparator != null) _settingsSeparator.Available = folderExists;
+        }
+
+        private void OnSettingsClick(object sender, EventArgs e)
+        {
+            if (_settingsMenu == null) return;
+            RefreshSettingsMenu();
+            if (IsHandleCreated)
+                _settingsMenu.Show(_btnSettings, new Point(0, _btnSettings.Height));
+        }
+
+        private void OnKeepReportsClick(object sender, EventArgs e)
+        {
+            if (_miKeepReports == null) return;
+
+            // CheckOnClick ha già commutato la spunta: questo è il valore richiesto.
+            bool requested = _miKeepReports.Checked;
+            bool saved = false;
+            try
+            {
+                if (_saveKeepReports != null) saved = _saveKeepReports(requested);
+            }
+            catch (Exception)
+            {
+                saved = false;
+            }
+
+            if (saved)
+            {
+                _keepReports = requested;
+                UpdateReportLabel();
+                return;
+            }
+
+            // Salvataggio non riuscito: la spunta viene riportata al valore effettivo
+            // e l'utente viene informato. Nessun cambio di stato silenzioso.
+            _miKeepReports.Checked = !requested;
+            NotifyUser("Impossibile salvare la preferenza per la conservazione dei report.");
+        }
+
+        private void OnOpenReportsFolderClick(object sender, EventArgs e)
+        {
+            string folder = null;
+            try
+            {
+                folder = _reportsFolder != null ? _reportsFolder() : ReportsFolderDefault();
+            }
+            catch (Exception)
+            {
+                folder = null;
+            }
+
+            if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+            {
+                NotifyUser("La cartella dei report non esiste ancora: viene creata al termine "
+                    + "di un'analisi o di una pulizia.");
+                return;
+            }
+
+            try
+            {
+                ProcessStartInfo info = new ProcessStartInfo(folder);
+                info.UseShellExecute = true;
+                _startProcess(info);
+            }
+            catch (Exception ex)
+            {
+                NotifyUser("Impossibile aprire la cartella dei report: " + ex.Message);
+            }
+        }
+
+        private bool ReportsFolderExists()
+        {
+            try
+            {
+                string folder = _reportsFolder != null ? _reportsFolder() : ReportsFolderDefault();
+                return !string.IsNullOrEmpty(folder) && Directory.Exists(folder);
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 

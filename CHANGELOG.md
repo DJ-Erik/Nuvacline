@@ -2,6 +2,63 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.3.0] — 2026-10-12
+
+Terza versione. Aggiunge la finestra Informazioni, il menu Impostazioni con la
+conservazione dei report configurabile e porta la versione ufficiale a 0.3.0.
+
+### Aggiunto
+
+- **Finestra Informazioni** (pulsante `?` in alto a destra): finestra modale
+  *Informazioni su CleanSlate* con scopo, nota *Gratuito ed essenziale*, privacy
+  (*Nessuna connessione di rete, nessun dato raccolto, nessuna modifica al registro,
+  nessun avvio automatico*), funzionamento e avvertenza. Nessuna azione, nessuna rete:
+  solo testo e il pulsante OK. Il contenuto è costruito in memoria
+  (`BuildInfoForm`/`BuildInfoText` in `MainForm`) e il pulsante passa dal seam
+  `_showInfoDialog`, così i test non aprono mai finestre reali.
+- **Menu Impostazioni** (pulsante `⚙` in alto a destra): `ContextMenuStrip` con la
+  voce a spunta *Conserva i report generati* (`CheckOnClick`, valore persistito) e la
+  voce *Apri cartella dei report*, visibile — insieme al separatore — solo quando la
+  cartella esiste. Un salvataggio non riuscito riporta la spunta al valore effettivo e
+  informa l'utente con un messaggio; l'apertura della cartella usa il seam
+  `_startProcess` con `UseShellExecute`, senza argomenti di shell.
+- **Preferenza `KeepReports`** (`ScanSettings`): nuova chiave `KeepReports=<0|1>` in
+  `%LOCALAPPDATA%\CleanSlate\settings.txt`, indipendente da `MinAgeHours`; la
+  scrittura di una chiave preserva tutte le altre righe del file (nuovo helper
+  `WriteSetting`). Letture difettose (file assente, riga malformata, valore non
+  valido, errori di I/O) ricadono sul predefinito, che è la **conservazione attiva**:
+  il comportamento di 0.2.0 resta quindi invariato. Nuove API
+  `LoadKeepReports`/`LoadKeepReportsFrom`/`SaveKeepReports`/`SaveKeepReportsTo` e
+  seam dedicati in `MainForm` (`_loadKeepReports`, `_saveKeepReports`,
+  `_reportsFolder`) per i test.
+
+### Aggiornato
+
+- **Generazione dei report**: `GenerateReport` distingue ora la scrittura automatica
+  (a fine analisi o pulizia) da quella esplicita. In automatico il file viene scritto
+  solo se la conservazione è attiva; disattivandola non viene scritto nulla e **nessun
+  report già presente viene cancellato**. *Apri report* genera comunque un report su
+  richiesta anche con la conservazione disattivata, e l'etichetta riporta
+  *Report: conservazione disattivata…*. Con la conservazione attiva (predefinita)
+  l'etichetta resta identica a 0.2.0.
+- **Interfaccia alleggerita**: rimossa l'etichetta descrittiva sotto il titolo e
+  accorciata la nota a piè di pagina; i contenuti informativi sono ora nella finestra
+  Informazioni, mentre la nota operativa resta visibile (deselezione libera,
+  conferma obbligatoria, file eliminati non recuperabili). I due nuovi pulsanti sono
+  agganciati al bordo destro della finestra.
+- Versione ufficiale del prodotto portata da `0.2.0` a `0.3.0`:
+  `AssemblyVersion`/`AssemblyFileVersion` `0.3.0.0`, `AssemblyInformationalVersion` `0.3.0`,
+  identità e descrizione del manifest, documentazione e percorsi degli artefatti.
+- Percorso del pacchetto portable: `artifacts/alpha-0.3/` (era `artifacts/alpha-0.2/`).
+- La suite di test è passata da **126** a **145** con i 19 test introdotti in 0.3.0
+  (`InfoSettingsTests`: finestra Informazioni, menu Impostazioni, persistenza
+  `KeepReports`, generazione condizionata dei report ed errori di salvataggio).
+- **Verifica end-to-end** `tests\verify.ps1`: da **31** a **41 controlli**, con la
+  sezione dedicata ai due pulsanti di servizio (presenza, apertura e chiusura della
+  finestra Informazioni con lettura del contenuto, apertura del menu Impostazioni e
+  chiusura con Esc). Il clic che apre una modale è inviato da un thread in background,
+  perché un `SendMessage` diretto resterebbe bloccato fino alla chiusura della finestra.
+
 ## [0.2.0] — 2026-10-12
 
 Seconda versione. Aggiunge il logo ufficiale, il menu contestuale dei risultati, la

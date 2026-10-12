@@ -105,7 +105,7 @@ namespace CleanSlate.Core
             data.DurationText = duration.TotalSeconds.ToString("N1", System.Globalization.CultureInfo.CurrentCulture) + " s";
 
             if (data.ScanAvailable && !data.ScanCancelled && data.FilesEligible == 0 && data.ScanErrors == 0)
-                data.Notes.Add("Non sono stati trovati file temporanei recuperabili secondo le regole della versione 0.2.0.");
+                data.Notes.Add("Non sono stati trovati file temporanei recuperabili secondo le regole della versione 0.3.0.");
             if (data.ScanAvailable && data.ScanCancelled)
                 data.Notes.Add("L'analisi è stata annullata: i valori si riferiscono ai risultati parziali.");
             if (data.CleanAvailable && data.CleanCancelled)

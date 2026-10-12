@@ -31,7 +31,7 @@ if (-not $SkipTests) {
 }
 
 if ($Package) {
-    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'alpha-0.2'
+    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'alpha-0.3'
     if (-not $artifacts.StartsWith($Root, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Percorso degli artefatti non valido.'
     }
@@ -45,7 +45,7 @@ if ($Package) {
     Copy-Item -LiteralPath $appExe -Destination (Join-Path $artifacts 'CleanSlate.exe') -Force
 
     $readme = @"
-CleanSlate 0.2.0
+CleanSlate 0.3.0
 ==================
 
 COSA FA
@@ -63,6 +63,9 @@ COME SI USA
 5. Il report locale viene scritto in automatico in
    %LOCALAPPDATA%\CleanSlate\reports\ e il percorso appare nella finestra.
    "Apri report" lo apre nel lettore di testo predefinito.
+6. Il pulsante "?" mostra le informazioni sul prodotto; il pulsante con
+   l'ingranaggio consente di attivare o disattivare la conservazione dei
+   report e di aprire la cartella che li contiene.
 
 REQUISITI
 ---------
@@ -103,7 +106,7 @@ Nessun componente di terze parti e' incluso. Vedere LICENSE.txt.
     Set-Content -LiteralPath (Join-Path $artifacts 'README.txt') -Value $readme -Encoding UTF8
 
     $license = @"
-CleanSlate 0.2.0 - note su licenze e dipendenze
+CleanSlate 0.3.0 - note su licenze e dipendenze
 ==================================================
 
 Dipendenze di terze parti incluse nella distribuzione: NESSUNA.

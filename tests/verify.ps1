@@ -102,10 +102,49 @@ Add-Type -AssemblyName UIAutomationTypes
 
 $nativeSource = @'
 using System;
+using System.Text;
+using System.Threading;
 using System.Runtime.InteropServices;
 public static class CleanSlateClick {
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")]
+    public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+    public delegate bool EnumWinProc(IntPtr h, IntPtr l);
+    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWinProc cb, IntPtr l);
+    [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int GetClassName(IntPtr h, StringBuilder s, int max);
+    // Il click che apre una finestra modale blocca il chiamante fino alla chiusura:
+    // il messaggio viene quindi inviato da un thread in background.
+    public static Thread BeginBmClick(IntPtr h) {
+        Thread t = new Thread(delegate() { SendMessage(h, 0x00F5, IntPtr.Zero, IntPtr.Zero); });
+        t.IsBackground = true;
+        t.Start();
+        return t;
+    }
+    // Finestra visibile del processo il cui nome di classe identifica il menu di contesto.
+    public static IntPtr FindContextMenuWindow(uint pid) {
+        IntPtr found = IntPtr.Zero;
+        EnumWindows(delegate(IntPtr h, IntPtr l) {
+            uint p;
+            GetWindowThreadProcessId(h, out p);
+            if (p != pid || !IsWindowVisible(h)) { return true; }
+            StringBuilder sb = new StringBuilder(256);
+            GetClassName(h, sb, 256);
+            if (sb.ToString().StartsWith("WindowsForms10.Window.808")) { found = h; return false; }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+    // Invia Esc direttamente alla finestra indicata: SendKeys lavora sulla finestra
+    // attiva, che potrebbe essere la console da cui gira la verifica.
+    public static bool SendEscape(IntPtr h) {
+        if (h == IntPtr.Zero) { return false; }
+        PostMessage(h, 0x100, (IntPtr)0x1B, IntPtr.Zero);
+        return PostMessage(h, 0x101, (IntPtr)0x1B, IntPtr.Zero);
+    }
 }
 '@
 Add-Type -TypeDefinition $nativeSource
@@ -130,9 +169,22 @@ function Find-ById($scope, $id) {
     return $null
 }
 
+function Get-TreeSignature($scope) {
+    $sig = @{}
+    foreach ($e in (Get-Descendants $scope)) {
+        $sig[($e.Current.ClassName + '|' + $e.Current.Name + '|' + $e.Current.AutomationId)] = $true
+    }
+    return $sig
+}
+
 function Invoke-Button($element) {
     $handle = [IntPtr]([int]$element.Current.AutomationId)
     [void][CleanSlateClick]::SendMessage($handle, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)
+}
+
+function Invoke-ButtonAsync($element) {
+    $handle = [IntPtr]([int]$element.Current.AutomationId)
+    [void][CleanSlateClick]::BeginBmClick($handle)
 }
 
 function Get-SiblingWindows($processId, $excludeHandle) {
@@ -323,6 +375,84 @@ if ($null -ne $reportPath -and (Test-Path -LiteralPath $reportPath)) {
 
 Check ($null -ne (Find-ByName $mainWin 'Pulisci selezionati')) 'Il pulsante "Pulisci selezionati" è presente'
 Check ($null -ne (Find-ByName $mainWin 'Apri report')) 'Il pulsante "Apri report" è presente'
+
+Write-Host '3b) Pulsanti di servizio: Informazioni e Impostazioni...'
+$gearText = ([char]0x2699).ToString()
+$btnInfoEl = Find-ByName $mainWin '?'
+$btnGearEl = Find-ByName $mainWin $gearText
+Check ($null -ne $btnInfoEl) 'Il pulsante "?" delle Informazioni è presente'
+Check ($null -ne $btnGearEl) 'Il pulsante dell''ingranaggio delle Impostazioni è presente'
+
+# La finestra modale aperta dal pulsante "?" e' esposta da UIA come discendente
+# della finestra principale, non come finestra di primo livello.
+if ($null -ne $btnInfoEl) {
+    Invoke-ButtonAsync $btnInfoEl
+    Start-Sleep -Milliseconds 700
+    $infoWin = Find-ByNamePrefix $mainWin 'Informazioni su CleanSlate'
+    Check ($null -ne $infoWin) 'Il clic su "?" apre la finestra Informazioni'
+    if ($null -ne $infoWin) {
+        $infoBody = ''
+        foreach ($d in $infoWin.FindAll([System.Windows.Automation.TreeScope]::Descendants,
+                                         [System.Windows.Automation.Condition]::TrueCondition)) {
+            if ($d.Current.Name) { $infoBody += ' | ' + $d.Current.Name }
+        }
+        Check ($infoBody -like '*0.3.0*') 'La finestra Informazioni riporta la versione 0.3.0'
+        Check ($infoBody -like '*Nessuna connessione di rete*') 'La finestra Informazioni dichiara l''assenza di connessioni di rete'
+        Check ($infoBody -like '*I file eliminati non sono recuperabili*') 'La finestra Informazioni riporta l''avvertenza sui file eliminati'
+
+        $okEl = Find-ByName $infoWin 'OK'
+        if ($null -ne $okEl) { Invoke-Button $okEl }
+        Start-Sleep -Milliseconds 600
+        $infoStillOpen = ($null -ne (Find-ByNamePrefix $mainWin 'Informazioni su CleanSlate'))
+        Check (-not $infoStillOpen) 'Il pulsante OK chiude la finestra Informazioni'
+        if ($infoStillOpen) {
+            Note 'La finestra Informazioni non si è chiusa con OK: chiusura forzata solo per la verifica.'
+            $still = Find-ByNamePrefix $mainWin 'Informazioni su CleanSlate'
+            if ($null -ne $still) {
+                try {
+                    $pattern = $still.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
+                    $pattern.Close()
+                } catch { }
+            }
+            Start-Sleep -Milliseconds 400
+        }
+    }
+}
+
+# UIA non espone le voci del menu di contesto: la finestra del menu viene rilevata
+# come nuovo elemento dell'albero della finestra principale.
+if ($null -ne $btnGearEl) {
+    $menuBefore = Get-TreeSignature $mainWin
+    Invoke-Button $btnGearEl
+    Start-Sleep -Milliseconds 700
+    $menuWin = $null
+    $menuKey = ''
+    foreach ($e in (Get-Descendants $mainWin)) {
+        $key = $e.Current.ClassName + '|' + $e.Current.Name + '|' + $e.Current.AutomationId
+        if (-not $menuBefore.ContainsKey($key)) { $menuWin = $e; $menuKey = $key; break }
+    }
+    Check ($null -ne $menuWin) 'Il clic sull''ingranaggio apre il menu delle Impostazioni'
+    if ($null -ne $menuWin) {
+        Check ($menuWin.Current.ClassName -like 'WindowsForms10.Window.*') ('Finestra del menu rilevata: ' + $menuWin.Current.ClassName)
+
+        $menuHwnd = [IntPtr]$menuWin.Current.NativeWindowHandle
+        if ($menuHwnd -eq [IntPtr]::Zero) {
+            $menuHwnd = [CleanSlateClick]::FindContextMenuWindow([uint32]$proc.Id)
+        }
+        [void][CleanSlateClick]::SendEscape($menuHwnd)
+        Start-Sleep -Milliseconds 700
+        $menuStillOpen = (Get-TreeSignature $mainWin).ContainsKey($menuKey)
+        if ($menuStillOpen) {
+            [void][CleanSlateClick]::SendEscape([IntPtr]$mainHandle)
+            Start-Sleep -Milliseconds 700
+            $menuStillOpen = (Get-TreeSignature $mainWin).ContainsKey($menuKey)
+        }
+        Check (-not $menuStillOpen) 'Il menu delle Impostazioni si chiude con Esc'
+        if ($menuStillOpen) {
+            Note 'Il menu delle Impostazioni è rimasto aperto: la chiusura prosegue con la finestra.'
+        }
+    }
+}
 
 if ($dialogLog.Count -gt 0) {
     Note ('Finestre di dialogo mostrate durante l''analisi: ' + (($dialogLog | Select-Object -Unique) -join ' | '))
