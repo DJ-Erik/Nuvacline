@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace CleanSlate.Core
 {
-    /// <summary>Nome della unica categoria supportata dalla versione 0.1.</summary>
+    /// <summary>Nome della unica categoria supportata da CleanSlate.</summary>
     public static class ScanCategories
     {
         public const string UserTempFiles = "File temporanei dell'utente";

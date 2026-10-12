@@ -1,4 +1,4 @@
-# Validazione pratica pre-beta di CleanSlate 0.1 alpha.
+# Validazione pratica pre-beta di CleanSlate 0.2.0.
 #
 # Scopo: attraversare il percorso reale analisi -> selezione -> cancellazione usando
 # l'eseguibile verificato, SENZA eliminare dati preesistenti dell'utente.
@@ -71,7 +71,7 @@ trap {
 }
 
 $root = Split-Path -Parent $PSScriptRoot
-$Exe = Join-Path $root 'artifacts\alpha-0.1\CleanSlate.exe'
+$Exe = Join-Path $root 'artifacts\alpha-0.2\CleanSlate.exe'
 $BinExe = Join-Path $root 'bin\Release\CleanSlate.exe'
 
 # Prefisso obbligatorio di ogni percorso che questo script puo' toccare.
@@ -381,7 +381,7 @@ function Wait-Dialog([uint32]$processId, [int]$timeoutMs) {
 # ================================================================== Fase 0 ====
 
 Write-Host ''
-Write-Host ('Validazione pratica pre-beta di CleanSlate 0.1 alpha  [id test: ' + $qaId + ']')
+Write-Host ('Validazione pratica pre-beta di CleanSlate 0.2.0  [id test: ' + $qaId + ']')
 Write-Host ('Vero %TEMP%: ' + $realTemp)
 Write-Host ''
 

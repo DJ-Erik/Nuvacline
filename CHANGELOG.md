@@ -2,6 +2,63 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.2.0] — 2026-10-12
+
+Seconda versione. Aggiunge il logo ufficiale, il menu contestuale dei risultati, la
+selezione massiva con conteggio e la soglia di scansione configurabile dall'interfaccia.
+
+### Aggiunto
+
+- **Logo ufficiale integrato** (`assets/logo/`): icona multirisoluzione `CleanSlate.ico`
+  (16/32/48/256 px, generata dal logo quadrato originale con trasparenza), alta risoluzione
+  `CleanSlate.png` (1600×1600, trasparente), varianti orizzontale e monocromatica originali.
+  L'icona è incorporata nell'eseguibile (`/win32icon`), impostata come icona della finestra
+  principale e mostrata accanto al titolo; il README visualizza la versione orizzontale.
+  Nessuna dipendenza aggiuntiva, nessuna risorsa esterna a runtime.
+- **Menu contestuale dei risultati** (clic destro su una riga): *Copia nome file*,
+  *Copia percorso cartella* e *Apri cartella e seleziona file* (`ScanRowActions` + menu in
+  `MainForm`). Il menu appare solo su righe collegate a un file (mai su intestazioni o spazi
+  vuoti), opera esclusivamente sul percorso memorizzato nella riga, non tocca la selezione
+  destinata alla pulizia né il motore, e non esegue mai il file: avvia
+  `explorer.exe /select,"percorso"` con argomenti quotati. File mancanti, appunti non
+  disponibili ed errori di avvio sono gestiti con messaggi in italiano. **11 test** nuovi
+  (`RowContextMenuTests`).
+- **Selezione massiva dei risultati**: due nuovi pulsanti *Seleziona tutto* e
+  *Deseleziona tutto* nella riga dei comandi (a destra di *Apri report*), con etichetta
+  *N file selezionati (dimensione)* che diventa *Nessun file selezionato* quando la
+  selezione è azzerata. I comandi agiscono solo sugli spunti della griglia: non toccano i
+  file su disco, non avviano pulizie, non aggirano la conferma e ignorano le righe non
+  associate a un `FileItem`. Stato della selezione sincronizzato tra checkbox, modello
+  (`FileItem.Selected`), etichetta e lista passata al motore (unica fonte di verità).
+  Compatibili con il menu contestuale (apertura/chiusura non alterano la selezione).
+  **13 test** nuovi (`BulkSelectionTests`).
+- **Impostazione della soglia di scansione** (`MinAge`): nuovo controllo *Età minima*
+  (ComboBox) nella riga di stato della finestra principale, con sette opzioni —
+  1 ora, 6 ore, 12 ore, 24 ore (predefinita), 48 ore, 7 giorni, nessuna soglia — e
+  descrizione nel tooltip. La soglia scelta viene applicata sia all'analisi
+  (`ScanOptions.MinAge`) sia alla pulizia (`CleanOptions.MinAge`), così una scansione
+  con soglia personalizzata non viene annullata dal ricalcolo del cutoff nel motore di
+  cancellazione. La preferenza è persistita in
+  `%LOCALAPPDATA%\CleanSlate\settings.txt` (`MinAgeHours=<ore>`; valori ammessi
+  {0,1,6,12,24,48,168}; ogni errore o valore non valido ricade su 24 ore). Il cambio
+  di soglia non avvia analisi né pulizie automatiche e non altera i risultati di una
+  scansione già completata (la soglia della scansione in corso resta visibile nel
+  riepilogo fino alla prossima analisi). Nuova classe `ScanSettings`/`ScanThresholdOption`
+  nel Core; seam `_loadSettings`/`_saveSettings` nel costruttore di `MainForm` per i
+  test (mai il profilo reale). **14 test** nuovi (`ScanThresholdTests`): mapping
+  opzioni/TimeSpan, persistenza e ricaricamento, fallback su file corrotto o assente,
+  esclusione/inclusione file secondo la soglia, boundary, nessuna soglia, wiring
+  GUI→scanner, nessun auto-scan, non retroattività, conferma ancora obbligatoria.
+- La suite di test è passata da 73 (0.1.0-alpha) a **111** con i 38 test introdotti in
+  0.2.0 (11 menu contestuale + 13 selezione massiva + 14 soglia).
+
+### Aggiornato
+
+- Versione ufficiale del prodotto portata da `0.1.0-alpha` a `0.2.0`:
+  `AssemblyVersion`/`AssemblyFileVersion` `0.2.0.0`, `AssemblyInformationalVersion` `0.2.0`,
+  identità e descrizione del manifest, documentazione e percorsi degli artefatti.
+- Percorso del pacchetto portable: `artifacts/alpha-0.2/` (era `artifacts/alpha-0.1/`).
+
 ## [0.1.0-alpha] — 2026-10-09
 
 Prima versione alpha, portatile e offline.
@@ -27,9 +84,9 @@ Prima versione alpha, portatile e offline.
   mostrato nella finestra e apribile con un pulsante; formati TXT e JSON; la radice temporanea
   è sostituita dal segnaposto `%TEMP%` e il profilo utente non compare.
 - **Suite di test automatica** (`src/CleanSlate.Tests`): runner equivalente a xUnit scritto in
-  C# (nessuna dipendenza di terze parti), **97 test** su percorsi, scanner, cancellazione,
-  report, privacy statica, race condition, menu contestuale e selezione massiva, con fixture
-  autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\`.
+  C# (nessuna dipendenza di terze parti), **73 test** su percorsi, scanner, cancellazione,
+  report, privacy statica e race condition, con fixture autoconsistente in
+  `%LOCALAPPDATA%\CleanSlateTests\`.
 - **Script di build** `build.ps1` / `build.common.ps1` che compilano con `csc.exe` in-box di
   .NET Framework, eseguono i test e producono il pacchetto portable in
   `artifacts\alpha-0.1\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt`.
@@ -38,59 +95,6 @@ Prima versione alpha, portatile e offline.
   processo, l'assenza di connessioni TCP in uscita e l'invariabilità di registro, servizi,
   attività pianificate e avvio automatico. **31 controlli**.
 - **Documentazione**: `README.md`, `SECURITY.md`, `PRIVACY.md`, `TASKS.md`.
-- **Logo ufficiale integrato** (`assets/logo/`): icona multirisoluzione `CleanSlate.ico`
-  (16/32/48/256 px, generata dal logo quadrato originale con trasparenza), alta risoluzione
-  `CleanSlate.png` (1600×1600, trasparente), varianti orizzontale e monocromatica originali.
-  L'icona è incorporata nell'eseguibile (`/win32icon`), impostata come icona della finestra
-  principale e mostrata accanto al titolo; il README visualizza la versione orizzontale.
-  Nessuna dipendenza aggiuntiva, nessuna risorsa esterna a runtime.
-  SHA-256 dell'eseguibile dopo l'integrazione: `8e14e3c0085fc2c2…`
-  (aggiornato in `artifacts/alpha-0.1/SHA256SUMS.txt`; come già documentato, la build
-  non è riproducibile bit per bit, quindi l'hash è valido per questo pacchetto).
-- **Menu contestuale dei risultati** (clic destro su una riga): *Copia nome file*,
-  *Copia percorso cartella* e *Apri cartella e seleziona file* (`ScanRowActions` + menu in
-  `MainForm`). Il menu appare solo su righe collegate a un file (mai su intestazioni o spazi
-  vuoti), opera esclusivamente sul percorso memorizzato nella riga, non tocca la selezione
-  destinata alla pulizia né il motore, e non esegue mai il file: avvia
-  `explorer.exe /select,"percorso"` con argomenti quotati. File mancanti, appunti non
-  disponibili ed errori di avvio sono gestiti con messaggi in italiano. **11 test** nuovi
-   (`RowContextMenuTests`, suite ora a **84**), verifiche eseguite anche sulla GUI reale del
-   pacchetto (menu visibile con le tre voci, nessuna voce su intestazione/spazi, spunti
-   invariati, tre azioni eseguite). SHA-256 dell'eseguibile con il menu: `d62ed875e4bed957…`
-   (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
-- **Selezione massiva dei risultati**: due nuovi pulsanti *Seleziona tutto* e
-  *Deseleziona tutto* nella riga dei comandi (a destra di *Apri report*), con etichetta
-  *N file selezionati (dimensione)* che diventa *Nessun file selezionato* quando la
-  selezione è azzerata. I comandi agiscono solo sugli spunti della griglia: non toccano i
-  file su disco, non avviano pulizie, non aggirano la conferma e ignorano le righe non
-  associate a un `FileItem`. Stato della selezione sincronizzato tra checkbox, modello
-  (`FileItem.Selected`), etichetta e lista passata al motore (unica fonte di verità).
-  Compatibili con il menu contestuale (apertura/chiusura non alterano la selezione).
-  **13 test** nuovi (`BulkSelectionTests`, suite ora a **97**), verifiche eseguite anche
-  sulla GUI reale del pacchetto (pulsanti visibili, deselezione → pulizia disabilitata,
-  rieselezione → pulizia abilitata, conteggio e dimensione aggiornati). SHA-256
-  dell'eseguibile: `b9eeeea20f29bd48…` (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
-- **Impostazione della soglia di scansione** (`MinAge`): nuovo controllo *Età minima*
-  (ComboBox) nella riga di stato della finestra principale, con sette opzioni —
-  1 ora, 6 ore, 12 ore, 24 ore (predefinita), 48 ore, 7 giorni, nessuna soglia — e
-  descrizione nel tooltip. La soglia scelta viene applicata sia all'analisi
-  (`ScanOptions.MinAge`) sia alla pulizia (`CleanOptions.MinAge`), così una scansione
-  con soglia personalizzata non viene annullata dal ricalcolo del cutoff nel motore di
-  cancellazione. La preferenza è persistita in
-  `%LOCALAPPDATA%\CleanSlate\settings.txt` (`MinAgeHours=<ore>`; valori ammessi
-  {0,1,6,12,24,48,168}; ogni errore o valore non valido ricade su 24 ore). Il cambio
-  di soglia non avvia analisi né pulizie automatiche e non altera i risultati di una
-  scansione già completata (la soglia della scansione in corso resta visibile nel
-  riepilogo fino alla prossima analisi). Nuova classe `ScanSettings`/`ScanThresholdOption`
-  nel Core; seam `_loadSettings`/`_saveSettings` nel costruttore di `MainForm` per i
-  test (mai il profilo reale). **14 test** nuovi (`ScanThresholdTests`, suite ora a
-  **111**): mapping opzioni/TimeSpan, persistenza e ricaricamento, fallback su file
-  corrotto o assente, esclusione/inclusione file secondo la soglia, boundary, nessuna
-  soglia, wiring GUI→scanner, nessun auto-scan, non retroattività, conferma ancora
-  obbligatoria. Verifiche eseguite anche sulla GUI reale del pacchetto (controllo
-  visibile, default 24 ore senza preferenza, caricamento da disco di 0/1 ore, riepilogo
-  con la soglia applicata, analisi con soglia "nessuna" che propone più file).
-  SHA-256 dell'eseguibile: `15452bd03bdd0684…` (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
 
 ### Sicurezza
 

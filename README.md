@@ -1,4 +1,4 @@
-# CleanSlate 0.1.0-alpha
+# CleanSlate 0.2.0
 
 <img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
 
@@ -84,7 +84,7 @@ cleanslate/
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
 │   └── CleanSlate.Tests/  runner di test + 111 test
-├── artifacts/alpha-0.1/   pacchetto distribuibile
+├── artifacts/alpha-0.2/   pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -98,7 +98,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\alpha-0.1
+# compilazione + test + pacchetto portable in artifacts\alpha-0.2
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -122,7 +122,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\alpha-0.1\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\alpha-0.2\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 

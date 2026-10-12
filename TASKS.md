@@ -1,4 +1,4 @@
-# TASKS — CleanSlate 0.1.0-alpha
+# TASKS — CleanSlate 0.2.0
 
 Checklist operativa. Ogni voce riporta lo **stato reale** verificato, non l'intenzione.
 
@@ -296,7 +296,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
-| Pacchetto portable | `artifacts/alpha-0.1/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
+| Pacchetto portable | `artifacts/alpha-0.2/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
 | Pacchetto == `bin/Release` | SHA-256 identici nella stessa sessione di build (build non riproducibile) |
 | Build pre-audit conservata | `artifacts/audit-baseline/` (SHA-256 `bf33e9cb…`) |
 | Documentazione | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |

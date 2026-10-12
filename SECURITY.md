@@ -1,6 +1,6 @@
 # Sicurezza di CleanSlate
 
-Documento relativo alla versione **0.1.0-alpha**.
+Documento relativo alla versione **0.2.0**.
 
 ## Modello di minaccia
 
@@ -163,7 +163,7 @@ vedi "Rischi residui dichiarati" punto 6.
 Progetto alpha locale, senza canale pubblico dedicato. Per segnalare un problema aprire un
 issue indicando:
 
-- versione (`CleanSlate 0.1.0-alpha`);
+- versione (`CleanSlate 0.2.0`);
 - passi per riprodurre;
 - percorso interessato (senza dati personali);
 - cosa ci si aspettava e cosa è successo.
