@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
@@ -44,9 +45,22 @@ namespace CleanSlate.UI
         private string _currentRoot;
         private string _lastReportPath;
 
+        private ContextMenuStrip _rowMenu;
+        private FileItem _rowMenuTarget;
+        private bool[] _rowMenuCheckSnapshot;
+        private Action<string> _notifyUser;
+        private Action<string> _setClipboard;
+        private Action<ProcessStartInfo> _startProcess;
+
         public MainForm()
         {
             BuildUi();
+            _notifyUser = delegate(string text)
+            {
+                ShowMessageOwner(text, "CleanSlate", MessageBoxIcon.Warning);
+            };
+            _setClipboard = delegate(string text) { Clipboard.SetText(text); };
+            _startProcess = delegate(ProcessStartInfo info) { Process.Start(info); };
             UpdateSummaryLabel();
             UpdateReportLabel();
             UpdateSelectionState();
@@ -179,6 +193,8 @@ namespace CleanSlate.UI
             BuildGridColumns();
             _grid.CurrentCellDirtyStateChanged += OnGridCurrentCellDirtyStateChanged;
             _grid.CellValueChanged += OnGridCellValueChanged;
+            _grid.CellMouseDown += OnGridCellMouseDown;
+            BuildRowContextMenu();
             Controls.Add(_grid);
 
             _footnoteLabel = new Label();
@@ -810,6 +826,163 @@ namespace CleanSlate.UI
             bool selected = value is bool && (bool)value;
             if (item != null) item.Selected = selected;
             UpdateSelectionState();
+        }
+
+        #endregion
+
+        #region Menu contestuale
+
+        private void BuildRowContextMenu()
+        {
+            _rowMenu = new ContextMenuStrip();
+            _rowMenu.Name = "menuRowContext";
+
+            ToolStripMenuItem copyName = new ToolStripMenuItem("Copia nome file");
+            copyName.Name = "miCopyName";
+            copyName.Click += OnCopyNameClick;
+
+            ToolStripMenuItem copyFolder = new ToolStripMenuItem("Copia percorso cartella");
+            copyFolder.Name = "miCopyFolder";
+            copyFolder.Click += OnCopyFolderClick;
+
+            ToolStripMenuItem openFolder = new ToolStripMenuItem("Apri cartella e seleziona file");
+            openFolder.Name = "miOpenFolder";
+            openFolder.Click += OnOpenFolderClick;
+
+            _rowMenu.Items.Add(copyName);
+            _rowMenu.Items.Add(copyFolder);
+            _rowMenu.Items.Add(openFolder);
+            _rowMenu.Closed += OnRowMenuClosed;
+        }
+
+        /// <summary>
+        /// Il menu compare solo su clic destro di una riga valida che rappresenta un file:
+        /// intestazioni, spazi vuoti e righe senza modello vengono ignorati.
+        /// </summary>
+        private void OnGridCellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right) return;
+            ShowRowMenuFor(e.RowIndex);
+        }
+
+        private bool ShouldShowRowMenu(int rowIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= _grid.Rows.Count) return false;
+            return ScanRowActions.IsValidTarget(_grid.Rows[rowIndex].Tag);
+        }
+
+        private void ShowRowMenuFor(int rowIndex)
+        {
+            _rowMenuTarget = null;
+            if (!ShouldShowRowMenu(rowIndex)) return;
+
+            _rowMenuTarget = _grid.Rows[rowIndex].Tag as FileItem;
+            // Fotografia degli spunti prima dell'apertura: alla chiusura il menu deve
+            // garantire che la selezione destinata alla pulizia sia rimasta intatta.
+            _rowMenuCheckSnapshot = SnapshotCheckState();
+
+            if (IsHandleCreated)
+            {
+                Point location = _grid.PointToClient(Cursor.Position);
+                _rowMenu.Show(_grid, location);
+            }
+        }
+
+        private void OnRowMenuClosed(object sender, ToolStripDropDownClosedEventArgs e)
+        {
+            RestoreCheckState(_rowMenuCheckSnapshot);
+            _rowMenuCheckSnapshot = null;
+            // Il Click della voce puo' essere distribuito DOPO la chiusura del menu:
+            // il target non viene azzerato qui (verra' sostituito alla prossima apertura)
+            // affinche' le azioni leggano comunque il percorso della riga che ha aperto
+            // il menu, qualunque sia l'ordine degli eventi.
+        }
+
+        private bool[] SnapshotCheckState()
+        {
+            bool[] state = new bool[_grid.Rows.Count];
+            for (int i = 0; i < _grid.Rows.Count; i++)
+            {
+                object value = _grid.Rows[i].Cells["colSelected"].Value;
+                state[i] = value is bool && (bool)value;
+            }
+            return state;
+        }
+
+        private void RestoreCheckState(bool[] state)
+        {
+            if (state == null || state.Length != _grid.Rows.Count) return;
+            for (int i = 0; i < state.Length; i++)
+            {
+                object value = _grid.Rows[i].Cells["colSelected"].Value;
+                bool current = value is bool && (bool)value;
+                if (current == state[i]) continue;
+                // IlValueChanged propagherà lo stato a FileItem.Selected e al pulsante.
+                _grid.Rows[i].Cells["colSelected"].Value = state[i];
+            }
+        }
+
+        private string RowMenuPath()
+        {
+            return _rowMenuTarget != null ? _rowMenuTarget.FullPath : null;
+        }
+
+        private void OnCopyNameClick(object sender, EventArgs e)
+        {
+            string path = RowMenuPath();
+            if (string.IsNullOrEmpty(path))
+            {
+                NotifyUser(ScanRowActions.InvalidTargetMessage);
+                return;
+            }
+            CopyRowText(ScanRowActions.GetFileName(path));
+        }
+
+        private void OnCopyFolderClick(object sender, EventArgs e)
+        {
+            string path = RowMenuPath();
+            if (string.IsNullOrEmpty(path))
+            {
+                NotifyUser(ScanRowActions.InvalidTargetMessage);
+                return;
+            }
+            CopyRowText(ScanRowActions.GetFolder(path));
+        }
+
+        private void CopyRowText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                NotifyUser(ScanRowActions.InvalidTargetMessage);
+                return;
+            }
+            try { _setClipboard(text); }
+            catch (Exception ex)
+            {
+                NotifyUser(ScanRowActions.ClipboardErrorMessage + " " + ex.Message);
+            }
+        }
+
+        private void OnOpenFolderClick(object sender, EventArgs e)
+        {
+            string path = RowMenuPath();
+            string errorMessage;
+            if (!ScanRowActions.CanOpenFolder(path, out errorMessage))
+            {
+                NotifyUser(errorMessage);
+                return;
+            }
+            try { _startProcess(ScanRowActions.BuildExplorerSelectStartInfo(path)); }
+            catch (Exception ex)
+            {
+                NotifyUser(ScanRowActions.ExplorerErrorMessage + " " + ex.Message);
+            }
+        }
+
+        private void NotifyUser(string text)
+        {
+            if (_notifyUser != null) _notifyUser(text);
+            else ShowMessageOwner(text, "CleanSlate", MessageBoxIcon.Warning);
         }
 
         #endregion

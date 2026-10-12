@@ -27,8 +27,8 @@ Prima versione alpha, portatile e offline.
   mostrato nella finestra e apribile con un pulsante; formati TXT e JSON; la radice temporanea
   è sostituita dal segnaposto `%TEMP%` e il profilo utente non compare.
 - **Suite di test automatica** (`src/CleanSlate.Tests`): runner equivalente a xUnit scritto in
-  C# (nessuna dipendenza di terze parti), **73 test** su percorsi, scanner, cancellazione,
-  report, privacy statica e race condition, con fixture autoconsistente in
+  C# (nessuna dipendenza di terze parti), **84 test** su percorsi, scanner, cancellazione,
+  report, privacy statica, race condition e menu contestuale, con fixture autoconsistente in
   `%LOCALAPPDATA%\CleanSlateTests\`.
 - **Script di build** `build.ps1` / `build.common.ps1` che compilano con `csc.exe` in-box di
   .NET Framework, eseguono i test e producono il pacchetto portable in
@@ -47,6 +47,17 @@ Prima versione alpha, portatile e offline.
   SHA-256 dell'eseguibile dopo l'integrazione: `8e14e3c0085fc2c2…`
   (aggiornato in `artifacts/alpha-0.1/SHA256SUMS.txt`; come già documentato, la build
   non è riproducibile bit per bit, quindi l'hash è valido per questo pacchetto).
+- **Menu contestuale dei risultati** (clic destro su una riga): *Copia nome file*,
+  *Copia percorso cartella* e *Apri cartella e seleziona file* (`ScanRowActions` + menu in
+  `MainForm`). Il menu appare solo su righe collegate a un file (mai su intestazioni o spazi
+  vuoti), opera esclusivamente sul percorso memorizzato nella riga, non tocca la selezione
+  destinata alla pulizia né il motore, e non esegue mai il file: avvia
+  `explorer.exe /select,"percorso"` con argomenti quotati. File mancanti, appunti non
+  disponibili ed errori di avvio sono gestiti con messaggi in italiano. **11 test** nuovi
+  (`RowContextMenuTests`, suite ora a **84**), verifiche eseguite anche sulla GUI reale del
+  pacchetto (menu visibile con le tre voci, nessuna voce su intestazione/spazi, spunti
+  invariati, tre azioni eseguite). SHA-256 dell'eseguibile con il menu: `d62ed875e4bed957…`
+  (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
 
 ### Sicurezza
 

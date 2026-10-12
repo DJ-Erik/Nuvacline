@@ -6,7 +6,9 @@ CleanSlate è un pulitore di file temporanei per Windows, **portatile, offline, 
 
 Analizza la cartella temporanea dell'utente corrente, mostra gli elementi recuperabili in una
 lista dove si sceglie cosa eliminare, chiede una **conferma esplicita** prima di cancellare e
-produce un **report locale** il cui percorso è mostrato nella finestra.
+produce un **report locale** il cui percorso è mostrato nella finestra. Un **menu contestuale**
+(clic destro su una riga) permette di copiare il nome o la cartella del file e di aprirlo in
+Esplora file selezionandolo, senza mai eseguirlo.
 
 CleanSlate **non promette di accelerare il computer**. Rimuove soltanto file temporanei
 dell'utente corrente che sono più vecchi di 24 ore.
@@ -76,7 +78,7 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 73 test
+│   └── CleanSlate.Tests/  runner di test + 84 test
 ├── artifacts/alpha-0.1/   pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
@@ -106,7 +108,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **73/73 superati**, ripetuto su 3 esecuzioni consecutive |
+| Suite di test | **84/84 superati**, ripetuto su 3 esecuzioni consecutive |
 | Verifica end-to-end GUI (`verify.ps1`) | **31/31 controlli superati** |
 | Rete (campionamento runtime) | **0 connessioni TCP in uscita** su almeno 40 campionamenti durante l'analisi reale |
 | Registro di sistema | Invariato prima/dopo l'esecuzione |
@@ -128,6 +130,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Selezione: solo gli elementi selezionati arrivano alla cancellazione, anche dopo l'ordinamento | `SecurityAuditTests` |
 | Report TXT/JSON, sanitizzazione percorsi, assenza di scritture | `ReportTests` |
 | Privacy statica (nessuna API di rete/registro/telemetria/shell distruttiva) | `PrivacyTests` |
+| Menu contestuale: nome/cartella copiati, visibilità solo su righe valide, spunti invariati, Esplora `/select` senza eseguire il file | `RowContextMenuTests` |
 
 I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il
 reale temporaneo dell'utente) e lo rimuovono integralmente, ACL comprese.
