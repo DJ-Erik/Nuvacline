@@ -245,6 +245,50 @@ aggiuntivi e senza modifiche al motore di scansione/cancellazione.
 
 ---
 
+## FASE 13 — Audit autonomo del prodotto (2026-10-13, post-0.3.5)
+
+Revisione sistematica di ogni modulo sorgente dopo il rilascio 0.3.5 (commit `6e30184`).
+
+- [x] **Sicurezza** — `PathSafety` (normalizzazione, confine radice stretto, cammino dei
+      reparse point con fallback "non sicuro" su attributi illeggibili, rifiuto di radici
+      drive/UNC/non fisse/inesistenti), `TempFolderScanner` (sola lettura, mai segue i
+      reparse, verifica `IsInsideRoot` per ogni file), `TempFileCleaner` (riverifica ogni
+      elemento subito prima di `File.Delete`: radice, containment, attributi, età,
+      reparse; finestra TOCTOU ridotta all'istantaneo; esito verificato post-cancellazione;
+      byte dichiarati solo se realmente rimossi), `TempPathProvider` (solo percorso
+      dell'ambiente), `ScanRowActions` (consultazione pura, mai cancellazione).
+      Nessuna API di rete, registro gestito o shell distruttiva in alcun modulo.
+      Registro: sola lettura P/Invoke del tema (audit stringhe exe 0.3.5: `RegGetValue`/
+      `advapi32` presenti come atteso; `RegistryKey`, `Microsoft.Win32`, token di rete assenti).
+- [x] **Robustezza** — flussi `async` con `finally` di pulizia (CTS, stato busy),
+      progressività throttled e marshalled su UI thread con guardie `IsDisposed`/
+      `IsHandleCreated`, annullamento cooperativo, handler eccezioni a livello UI e
+      AppDomain (`Program`), persistenza impostazioni che fallisce sui default, report
+      non bloccante.
+- [x] **Qualità** — conformità C# 5 / .NET 4.8 ovunque, zero dipendenze esterne,
+      UTF-8 senza BOM, stili consistenti, messaggi in italiano.
+- [x] **Esito: nessun difetto di prodotto.** Unica nota di codice morto:
+      `ScanProgress.DirectoriesVisited` è sempre 0 e mai letto (candidato pulizia 0.3.6).
+- [x] Verifica end-to-end `verify.ps1` sull'exe del pacchetto 0.3.5: **41/41**
+      (finestra, analisi reale, report, Informazioni/Impostazioni, registro, servizi,
+      attività, rete, chiusura) — eseguibile anche con sessione bloccata.
+- [ ] Restano ambientali, in attesa di sessione sbloccata: 5 `RowContextMenuTests`
+      (clipboard negata da LogonUI/LockApp: `OpenClipboard` E_ACCESSDENIED).
+
+### Pianificazione release successive (semver)
+
+Nessun difetto ⇒ nessun rilascio correttivo obbligato. Candidati per la prossima
+incremento, in attesa di conferma sull'estensione di contratto:
+
+- **0.3.6 (patch)**: rimuovere/capire `DirectoriesVisited` (completare il conteggio
+  cartelle nell'avanzamento scansione). Nessun impatto utente.
+- **0.4.0 (minor)**: rimozione prudente delle **cartelle vuote** residue sotto la radice
+  dopo la pulizia (stesse regole di sicurezza: solo dentro radice, mai reparse, mai la
+  radice, cancellabile). Cambia il contratto "rimuove file" in "rimuove file e cartelle
+  vuote residue": richiede conferma esplicita.
+
+---
+
 ## Criteri di completamento 0.1 Alpha
 
 | # | Criterio | Stato | Evidenza |
