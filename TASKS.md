@@ -228,7 +228,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | 6 | I percorsi esterni vengono rifiutati | [x] | `PathSafetyTests` + `SecurityAuditTests.PathSafety_*` (`..`, reparse, radice, `\\?\`, `\\.\`, ADS, spazi/punti finali) |
 | 7 | Gli errori non provocano crash non gestiti | [x] | `ScannerTests`/`CleanerTests` (ACL negata, file bloccato, cartella inesistente) |
 | 8 | La reportistica funziona | [x] | `ReportTests` + `verify.ps1` (file creato, contenuto conforme, percorso mostrato in GUI) |
-| 9 | La suite di test obbligatori passa | [x] | **97/97** su 3 esecuzioni consecutive (era 84/84 prima della selezione massiva, 73/73 prima del menu contestuale) |
+| 9 | La suite di test obbligatori passa | [x] | **111/111** su 3 esecuzioni consecutive (era 97/97 prima della soglia, 84/84 prima della selezione massiva, 73/73 prima del menu contestuale) |
 | 10 | La build Release viene generata | [x] | `artifacts/alpha-0.1/` + `SHA256SUMS.txt` ricalcolato e riverificato |
 | 11 | L'eseguibile viene avviato e verificato | [x] | `verify.ps1` **31/31** |
 | 12 | La documentazione descrive il prodotto | [x] | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
@@ -286,12 +286,13 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Verifica | Risultato |
 |---|---|
 | Compilazione Release x64 | `bin/Release/CleanSlate.exe` |
-| Suite di test | **97/97** su 3 esecuzioni consecutive (73/73 nella validazione pre-beta, +11 con il menu contestuale, +13 con la selezione massiva) |
+| Suite di test | **111/111** su 3 esecuzioni consecutive (73/73 nella validazione pre-beta, +11 con il menu contestuale, +13 con la selezione massiva, +14 con la soglia di scansione) |
 | Residui del fixture di test dopo la suite | **0** |
 | Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** su `bin/Release` e di nuovo **31/31** sull'exe del pacchetto |
 | Validazione pratica pre-beta (`tests/qa-practical.ps1`) | **OK** su vero `%TEMP%` e sandbox GUI (id `f0382398`); 0 residui, 0 file preesistenti persi, hash pacchetto invariato; deselezione GUI non eseguita (sessione bloccata), verificata al motore |
 | Menu contestuale risultati (clic destro) | **11 test** (`RowContextMenuTests`) + probe GUI reale sul pacchetto: menu su riga valida, tre voci eseguite (nome in appunti, cartella in appunti, `Esplora /select` su Temp), nessun menu su intestazione/spazi, spunti invariati |
 | Selezione massiva (Seleziona/Deseleziona tutto) | **13 test** (`BulkSelectionTests`) + probe GUI reale sul pacchetto: pulsanti visibili e funzionanti su 3108 file reali, deselezione → pulizia disabilitata + "Nessun file selezionato", rieselezione → pulizia abilitata + conteggio/dimensione, righe non-file ignorate, nuova scansione senza selezioni obsolete |
+| Soglia di scansione (Età minima) | **14 test** (`ScanThresholdTests`) + probe GUI reale sul pacchetto: controllo visibile, default 24 ore, caricamento da disco di 0/1 ore, riepilogo coerente, analisi con "nessuna soglia" che propone più file (3165 vs 3110), nessun residuo |
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
@@ -328,7 +329,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 
 ```powershell
 cd C:\Users\User\Documents\Experiments\cleanslate
-powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 97/97 attesi
+powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 111/111 attesi
 powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 31/31 attesi
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package    # pacchetto portable
 ```

@@ -38,15 +38,21 @@ namespace CleanSlate.UI
         private Label _reportLabel;
         private DataGridView _grid;
         private Label _footnoteLabel;
+        private ComboBox _cboThreshold;
+        private Label _lblThreshold;
+        private ToolTip _thresholdToolTip;
 
         private CancellationTokenSource _cts;
         private bool _busy;
         private bool _loadingGrid;
+        private bool _loadingThreshold;
         private int _lastProgressTick;
         private ScanResult _lastScan;
         private CleanResult _lastClean;
         private string _currentRoot;
         private string _lastReportPath;
+        private ScanThresholdOption _currentThreshold;
+        private TimeSpan _lastScanMinAge;
 
         private ContextMenuStrip _rowMenu;
         private FileItem _rowMenuTarget;
@@ -54,6 +60,8 @@ namespace CleanSlate.UI
         private Action<string> _notifyUser;
         private Action<string> _setClipboard;
         private Action<ProcessStartInfo> _startProcess;
+        private Func<ScanThresholdOption> _loadSettings;
+        private Action<int> _saveSettings;
 
         public MainForm()
         {
@@ -64,6 +72,9 @@ namespace CleanSlate.UI
             };
             _setClipboard = delegate(string text) { Clipboard.SetText(text); };
             _startProcess = delegate(ProcessStartInfo info) { Process.Start(info); };
+            _loadSettings = delegate { return ScanSettings.Load(); };
+            _saveSettings = delegate(int hours) { ScanSettings.Save(hours); };
+            LoadThresholdSetting();
             UpdateSummaryLabel();
             UpdateReportLabel();
             UpdateSelectionState();
@@ -152,10 +163,41 @@ namespace CleanSlate.UI
             _statusLabel.Name = "lblStatus";
             _statusLabel.AutoSize = false;
             _statusLabel.Location = new Point(14, 112);
-            _statusLabel.Size = new Size(ClientSize.Width - 28, 20);
-            _statusLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _statusLabel.Size = new Size(ClientSize.Width - 28 - 260, 20);
+            _statusLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             _statusLabel.Text = "Pronto.";
             Controls.Add(_statusLabel);
+
+            // Soglia d'età minima: modificabile dall'utente, persistita in ScanSettings.
+            // La modifica NON avvia analisi né pulizia; vale dalla prossima scansione.
+            _lblThreshold = new Label();
+            _lblThreshold.Name = "lblThreshold";
+            _lblThreshold.AutoSize = false;
+            _lblThreshold.Location = new Point(ClientSize.Width - 254, 114);
+            _lblThreshold.Size = new Size(80, 18);
+            _lblThreshold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _lblThreshold.ForeColor = Color.DimGray;
+            _lblThreshold.Text = "Età minima:";
+            Controls.Add(_lblThreshold);
+
+            _cboThreshold = new ComboBox();
+            _cboThreshold.Name = "cboThreshold";
+            _cboThreshold.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cboThreshold.Location = new Point(ClientSize.Width - 170, 111);
+            _cboThreshold.Size = new Size(156, 24);
+            _cboThreshold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            Controls.Add(_cboThreshold);
+
+            _thresholdToolTip = new ToolTip();
+            _thresholdToolTip.SetToolTip(_lblThreshold,
+                "Età minima richiesta perché un file sia proposto dalla scansione. "
+                + "\"Nessuna soglia temporale\" include anche i file appena creati.");
+            _thresholdToolTip.SetToolTip(_cboThreshold,
+                "Età minima richiesta perché un file sia proposto dalla scansione. "
+                + "Modificare l'impostazione non avvia alcuna operazione: il nuovo valore "
+                + "entra in vigore alla prossima analisi. \"Nessuna soglia temporale\" "
+                + "include anche i file appena creati.");
+            _cboThreshold.SelectedIndexChanged += OnThresholdChanged;
 
             _progress = new ProgressBar();
             _progress.Name = "progress";
@@ -366,16 +408,17 @@ namespace CleanSlate.UI
                 }
 
                 _summaryLabel.Text = string.Format(
-                    "File analizzati: {0} · Proposti: {1} · Scartati: {2}{3} · Spazio recuperabile stimato: {4}",
+                    "File analizzati: {0} · Proposti: {1} · Scartati: {2}{3} · Spazio recuperabile stimato: {4} · Età minima: {5}",
                     _lastScan.FilesScanned,
                     _lastScan.FilesEligible,
                     _lastScan.FilesSkipped,
                     errors,
-                    ByteFormatter.Format(_lastScan.EstimatedBytes));
+                    ByteFormatter.Format(_lastScan.EstimatedBytes),
+                    FormatThreshold(_lastScanMinAge));
                 return;
             }
 
-            _summaryLabel.Text = "Nessuna analisi eseguita.";
+            _summaryLabel.Text = "Nessuna analisi eseguita. Età minima attuale: " + FormatThreshold(CurrentThreshold.Value) + ".";
         }
 
         private static void ShowMessage(string text, string title, MessageBoxIcon icon)
@@ -417,8 +460,12 @@ namespace CleanSlate.UI
             CancellationTokenSource cts = new CancellationTokenSource();
             _cts = cts;
 
+            ScanThresholdOption threshold = CurrentThreshold;
+            _lastScanMinAge = threshold.Value;
+
             ScanOptions options = new ScanOptions();
             options.Root = path.Root;
+            options.MinAge = threshold.Value;
             options.CancellationToken = cts.Token;
             options.Progress = CreateScanProgressReporter();
 
@@ -603,6 +650,10 @@ namespace CleanSlate.UI
             CleanOptions options = new CleanOptions();
             options.Root = path.Root;
             options.Items = selected;
+            // Il motore ricalcola il cutoff: usa la stessa soglia della scansione
+            // che ha prodotto questi risultati, non l'eventuale valore corrente
+            // della combo (che vale solo dalla prossima analisi).
+            options.MinAge = _lastScanMinAge;
             options.CancellationToken = cts.Token;
             options.Progress = CreateCleanProgressReporter();
 
@@ -919,6 +970,65 @@ namespace CleanSlate.UI
                 _loadingGrid = false;
                 UpdateSelectionState();
             }
+        }
+
+        #endregion
+
+        #region Soglia età minima
+
+        private void LoadThresholdSetting()
+        {
+            _loadingThreshold = true;
+            try
+            {
+                _currentThreshold = _loadSettings();
+                _lastScanMinAge = _currentThreshold.Value;
+                PopulateThresholdCombo();
+            }
+            finally
+            {
+                _loadingThreshold = false;
+            }
+        }
+
+        private void PopulateThresholdCombo()
+        {
+            _cboThreshold.Items.Clear();
+            ScanThresholdOption[] options = ScanSettings.CreateOptions();
+            int selected = 0;
+            for (int i = 0; i < options.Length; i++)
+            {
+                _cboThreshold.Items.Add(options[i]);
+                if (options[i].Hours == _currentThreshold.Hours) selected = i;
+            }
+            _cboThreshold.SelectedIndex = selected;
+        }
+
+        private void OnThresholdChanged(object sender, EventArgs e)
+        {
+            if (_loadingThreshold) return;
+
+            ScanThresholdOption option = _cboThreshold.SelectedItem as ScanThresholdOption;
+            if (option == null) return;
+
+            _currentThreshold = option;
+            _saveSettings(option.Hours);
+            // Nessuna analisi né pulizia avviata: il nuovo valore vale dalla prossima scansione.
+        }
+
+        private ScanThresholdOption CurrentThreshold
+        {
+            get { return _currentThreshold ?? ScanSettings.DefaultOption(); }
+        }
+
+        private string FormatThreshold(TimeSpan minAge)
+        {
+            if (minAge <= TimeSpan.Zero) return "nessuna soglia";
+            if (minAge.TotalHours == 1) return "1 ora";
+            if (minAge.TotalHours < 24) return ((int)minAge.TotalHours) + " ore";
+            if (minAge.TotalDays == 1) return "24 ore";
+            if (minAge.TotalDays == 7) return "7 giorni";
+            return ((int)minAge.TotalDays) + " giorni";
         }
 
         #endregion

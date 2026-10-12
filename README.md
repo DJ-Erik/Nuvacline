@@ -12,7 +12,9 @@ clic, mentre un **menu contestuale** (clic destro su una riga) permette di copia
 la cartella del file e di aprirlo in Esplora file selezionandolo, senza mai eseguirlo.
 
 CleanSlate **non promette di accelerare il computer**. Rimuove soltanto file temporanei
-dell'utente corrente che sono più vecchi di 24 ore.
+dell'utente corrente che sono più vecchi di 24 ore (soglia configurabile da interfaccia:
+1 ora, 6 ore, 12 ore, 24 ore, 48 ore, 7 giorni oppure nessuna soglia; la scelta è
+persistita localmente e si applica sia all'analisi sia alla pulizia).
 
 ---
 
@@ -50,7 +52,9 @@ dell'utente corrente che sono più vecchi di 24 ore.
 1. **Unica categoria**: "File temporanei dell'utente" (cartella temporanea indicata
    dall'ambiente Windows). Nessun browser cache, nessun registro, nessun servizio.
 2. **File recenti**: gli elementi modificati nelle ultime 24 ore sono scartati per impostazione
-   predefinita (`MinAge` configurabile a livello di codice).
+   predefinita. La soglia è configurabile dall'interfaccia (1 ora, 6 ore, 12 ore, 24 ore,
+   48 ore, 7 giorni, nessuna soglia) e viene salvata in
+   `%LOCALAPPDATA%\CleanSlate\settings.txt`.
 3. **File bloccati**: vengono saltati e conteggiati come errori, mai forzati.
 4. **Percorsi lunghi**: il manifest dichiara `longPathAware`, ma il runtime .NET Framework può
    comunque rifiutare alcuni percorsi oltre 260 caratteri: in tal caso l'elemento viene saltato
@@ -79,7 +83,7 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 97 test
+│   └── CleanSlate.Tests/  runner di test + 111 test
 ├── artifacts/alpha-0.1/   pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
@@ -109,9 +113,10 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **97/97 superati** (84 preesistenti invariati + 13 nuovi), ripetuto su 3 esecuzioni consecutive |
+| Suite di test | **111/111 superati** (97 precedenti invariati + 14 nuovi), ripetuto su 3 esecuzioni consecutive |
 | Verifica end-to-end GUI (`verify.ps1`) | **31/31 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
+| Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
 | Rete (campionamento runtime) | **0 connessioni TCP in uscita** su almeno 40 campionamenti durante l'analisi reale |
 | Registro di sistema | Invariato prima/dopo l'esecuzione |
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
@@ -134,6 +139,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Privacy statica (nessuna API di rete/registro/telemetria/shell distruttiva) | `PrivacyTests` |
 | Menu contestuale: nome/cartella copiati, visibilità solo su righe valide, spunti invariati, Esplora `/select` senza eseguire il file | `RowContextMenuTests` |
 | Selezione massiva: Seleziona/Deseleziona tutto, conteggio, dimensione, nuova scansione, righe non-file, sync con motore e menu contestuale | `BulkSelectionTests` |
+| Soglia di scansione: default 24 ore, mapping opzioni, persistenza/ricaricamento, fallback, esclusione/inclusione file, wiring GUI→scanner, nessun auto-scan, non retroattività, conferma | `ScanThresholdTests` |
 
 I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il
 reale temporaneo dell'utente) e lo rimuovono integralmente, ACL comprese.

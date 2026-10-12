@@ -70,6 +70,27 @@ Prima versione alpha, portatile e offline.
   sulla GUI reale del pacchetto (pulsanti visibili, deselezione → pulizia disabilitata,
   rieselezione → pulizia abilitata, conteggio e dimensione aggiornati). SHA-256
   dell'eseguibile: `b9eeeea20f29bd48…` (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
+- **Impostazione della soglia di scansione** (`MinAge`): nuovo controllo *Età minima*
+  (ComboBox) nella riga di stato della finestra principale, con sette opzioni —
+  1 ora, 6 ore, 12 ore, 24 ore (predefinita), 48 ore, 7 giorni, nessuna soglia — e
+  descrizione nel tooltip. La soglia scelta viene applicata sia all'analisi
+  (`ScanOptions.MinAge`) sia alla pulizia (`CleanOptions.MinAge`), così una scansione
+  con soglia personalizzata non viene annullata dal ricalcolo del cutoff nel motore di
+  cancellazione. La preferenza è persistita in
+  `%LOCALAPPDATA%\CleanSlate\settings.txt` (`MinAgeHours=<ore>`; valori ammessi
+  {0,1,6,12,24,48,168}; ogni errore o valore non valido ricade su 24 ore). Il cambio
+  di soglia non avvia analisi né pulizie automatiche e non altera i risultati di una
+  scansione già completata (la soglia della scansione in corso resta visibile nel
+  riepilogo fino alla prossima analisi). Nuova classe `ScanSettings`/`ScanThresholdOption`
+  nel Core; seam `_loadSettings`/`_saveSettings` nel costruttore di `MainForm` per i
+  test (mai il profilo reale). **14 test** nuovi (`ScanThresholdTests`, suite ora a
+  **111**): mapping opzioni/TimeSpan, persistenza e ricaricamento, fallback su file
+  corrotto o assente, esclusione/inclusione file secondo la soglia, boundary, nessuna
+  soglia, wiring GUI→scanner, nessun auto-scan, non retroattività, conferma ancora
+  obbligatoria. Verifiche eseguite anche sulla GUI reale del pacchetto (controllo
+  visibile, default 24 ore senza preferenza, caricamento da disco di 0/1 ore, riepilogo
+  con la soglia applicata, analisi con soglia "nessuna" che propone più file).
+  SHA-256 dell'eseguibile: `15452bd03bdd0684…` (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
 
 ### Sicurezza
 

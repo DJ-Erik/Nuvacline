@@ -1,4 +1,4 @@
-# Verifica end-to-end di CleanSlate su un eseguibile reale.
+﻿# Verifica end-to-end di CleanSlate su un eseguibile reale.
 #
 # Controlla:
 #   1. l'avvio della GUI, la pressione di "Analizza" e la lettura dello stato finale;
@@ -194,7 +194,7 @@ $mainWin = [System.Windows.Automation.AutomationElement]::FromHandle($proc.MainW
 Check ($mainWin.Current.Name -like 'CleanSlate*') ('Titolo della finestra: ' + $mainWin.Current.Name)
 
 $statusEl = Find-ByName $mainWin 'Pronto.'
-$summaryEl = Find-ByName $mainWin 'Nessuna analisi eseguita.'
+$summaryEl = Find-ByName $mainWin 'Nessuna analisi eseguita. Età minima attuale: 24 ore.'
 $reportEl = Find-ByName $mainWin 'Report: nessuno generato. Viene scritto al termine di un''analisi o di una pulizia.'
 Check ($null -ne $statusEl) 'Etichetta di stato individuata'
 Check ($null -ne $summaryEl) 'Etichetta di riepilogo individuata'
