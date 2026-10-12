@@ -213,7 +213,7 @@ namespace CleanSlate.UI
             _summaryLabel.Name = "lblSummary";
             _summaryLabel.AutoSize = false;
             _summaryLabel.Location = new Point(14, 162);
-            _summaryLabel.Size = new Size(ClientSize.Width - 28, 36);
+            _summaryLabel.Size = new Size(ClientSize.Width - 28, 52);
             _summaryLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _summaryLabel.AutoEllipsis = true;
             _summaryLabel.Text = "Nessuna analisi eseguita.";
@@ -222,7 +222,7 @@ namespace CleanSlate.UI
             _reportLabel = new Label();
             _reportLabel.Name = "lblReportPath";
             _reportLabel.AutoSize = false;
-            _reportLabel.Location = new Point(14, 200);
+            _reportLabel.Location = new Point(14, 216);
             _reportLabel.Size = new Size(ClientSize.Width - 28, 16);
             _reportLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _reportLabel.AutoEllipsis = true;
@@ -234,8 +234,8 @@ namespace CleanSlate.UI
             _grid.Name = "gridResults";
             _grid.AccessibleName = "Nessun elemento in elenco";
             _grid.Text = "Nessun elemento in elenco";
-            _grid.Location = new Point(14, 222);
-            _grid.Size = new Size(ClientSize.Width - 28, ClientSize.Height - 222 - 46);
+            _grid.Location = new Point(14, 238);
+            _grid.Size = new Size(ClientSize.Width - 28, ClientSize.Height - 238 - 46);
             _grid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _grid.ReadOnly = false;
             _grid.AllowUserToAddRows = false;
@@ -266,8 +266,9 @@ namespace CleanSlate.UI
             _footnoteLabel.Size = new Size(ClientSize.Width - 28, 34);
             _footnoteLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             _footnoteLabel.ForeColor = Color.DimGray;
-            _footnoteLabel.Text = "La pulizia è sempre preceduta da una conferma. I file eliminati non sono recuperabili. "
-                + "CleanSlate non promette di accelerare il computer: rimuove soltanto file temporanei recuperabili.";
+            _footnoteLabel.Text = "CleanSlate analizza tutti i file nel perimetro selezionato, ma propone soltanto "
+                + "quelli che rispettano la soglia temporale. Puoi deselezionare qualsiasi file prima della pulizia. "
+                + "I file eliminati non sono recuperabili.";
             Controls.Add(_footnoteLabel);
         }
 
@@ -365,6 +366,7 @@ namespace CleanSlate.UI
             int selected = CountSelected();
             _btnClean.Enabled = !_busy && selected > 0;
             UpdateSelectionLabel(selected);
+            UpdateSummaryLabel();
         }
 
         private void UpdateSelectionLabel(int selected)
@@ -394,31 +396,34 @@ namespace CleanSlate.UI
                 return;
             }
 
-            if (_lastScan != null)
+            if (_lastScan != null && _lastScan.Success)
             {
-                string errors;
+                int selected = CountSelected();
+                string errorText;
                 if (_lastScan.Errors > 0)
                 {
                     string detail = _lastScan.ErrorMessages.Count > 0 ? _lastScan.ErrorMessages[0] : "accesso negato";
-                    errors = string.Format(" · Errori di lettura: {0} ({1})", _lastScan.Errors, detail);
+                    errorText = string.Format("{0} ({1})", _lastScan.Errors, detail);
                 }
                 else
                 {
-                    errors = " · Errori di lettura: 0";
+                    errorText = "0";
                 }
 
                 _summaryLabel.Text = string.Format(
-                    "File analizzati: {0} · Proposti: {1} · Scartati: {2}{3} · Spazio recuperabile stimato: {4} · Età minima: {5}",
+                    "File analizzati: {0} · Proposti dal filtro: {1} · Esclusi dalla soglia: {2} · Errori di lettura: {3}\r\n"
+                    + "Selezionati per la pulizia: {4} · Spazio recuperabile stimato: {5} · Soglia temporale: {6}",
                     _lastScan.FilesScanned,
                     _lastScan.FilesEligible,
-                    _lastScan.FilesSkipped,
-                    errors,
+                    _lastScan.FilesExcludedByAge,
+                    errorText,
+                    selected,
                     ByteFormatter.Format(_lastScan.EstimatedBytes),
                     FormatThreshold(_lastScanMinAge));
                 return;
             }
 
-            _summaryLabel.Text = "Nessuna analisi eseguita. Età minima attuale: " + FormatThreshold(CurrentThreshold.Value) + ".";
+            _summaryLabel.Text = "Nessuna analisi eseguita. Soglia temporale: " + FormatThreshold(CurrentThreshold.Value) + ".";
         }
 
         private static void ShowMessage(string text, string title, MessageBoxIcon icon)
@@ -859,6 +864,11 @@ namespace CleanSlate.UI
                 }
 
                 ReportData data = ReportBuilder.Build(_lastScan, _lastClean, _currentRoot);
+                if (_lastScan != null)
+                {
+                    data.MinAgeText = FormatThreshold(_lastScanMinAge);
+                    data.FilesSelected = CountSelected();
+                }
                 ReportExporter.Export(candidate, data);
                 _lastReportPath = candidate;
                 UpdateReportLabel();
@@ -1013,6 +1023,7 @@ namespace CleanSlate.UI
 
             _currentThreshold = option;
             _saveSettings(option.Hours);
+            UpdateSummaryLabel();
             // Nessuna analisi né pulizia avviata: il nuovo valore vale dalla prossima scansione.
         }
 
@@ -1023,7 +1034,7 @@ namespace CleanSlate.UI
 
         private string FormatThreshold(TimeSpan minAge)
         {
-            if (minAge <= TimeSpan.Zero) return "nessuna soglia";
+            if (minAge <= TimeSpan.Zero) return "nessuna";
             if (minAge.TotalHours == 1) return "1 ora";
             if (minAge.TotalHours < 24) return ((int)minAge.TotalHours) + " ore";
             if (minAge.TotalDays == 1) return "24 ore";

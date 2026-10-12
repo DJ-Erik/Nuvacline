@@ -50,9 +50,14 @@ namespace CleanSlate.Core
             {
                 sb.AppendLine("File analizzati            : " + data.FilesScanned);
                 sb.AppendLine("File proposti              : " + data.FilesEligible);
+                sb.AppendLine("File esclusi dalla soglia  : " + data.FilesExcludedByAge);
                 sb.AppendLine("File scartati              : " + data.FilesSkipped);
                 sb.AppendLine("Cartelle non percorse      : " + data.DirectoriesSkipped);
                 sb.AppendLine("Errori di lettura          : " + data.ScanErrors);
+                if (data.FilesSelected > 0)
+                    sb.AppendLine("File selezionati per la pulizia: " + data.FilesSelected);
+                if (!string.IsNullOrEmpty(data.MinAgeText))
+                    sb.AppendLine("Soglia temporale           : " + data.MinAgeText);
                 sb.AppendLine("Spazio recuperabile stimato: " + ByteFormatter.Format(data.EstimatedBytes));
                 sb.AppendLine("Stima in byte             : " + data.EstimatedBytes);
                 if (data.ScanCancelled) sb.AppendLine("Esito: analisi annullata (risultati parziali).");
@@ -114,9 +119,14 @@ namespace CleanSlate.Core
                 sb.Append("{\n");
                 AppendNumber(sb, 2, "fileAnalizzati", data.FilesScanned, true);
                 AppendNumber(sb, 2, "fileProposti", data.FilesEligible, true);
+                AppendNumber(sb, 2, "fileEsclusiDallaSoglia", data.FilesExcludedByAge, true);
                 AppendNumber(sb, 2, "fileScartati", data.FilesSkipped, true);
                 AppendNumber(sb, 2, "cartelleNonPercorse", data.DirectoriesSkipped, true);
                 AppendNumber(sb, 2, "erroriLettura", data.ScanErrors, true);
+                if (data.FilesSelected > 0)
+                    AppendNumber(sb, 2, "fileSelezionatiPerLaPulizia", data.FilesSelected, true);
+                if (!string.IsNullOrEmpty(data.MinAgeText))
+                    AppendString(sb, 2, "sogliaTemporale", data.MinAgeText, true);
                 AppendNumber(sb, 2, "spazioRecuperabileStimatoByte", data.EstimatedBytes, true);
                 AppendBool(sb, 2, "annullata", data.ScanCancelled, true);
                 sb.Append("    \"messaggiErrore\": ");

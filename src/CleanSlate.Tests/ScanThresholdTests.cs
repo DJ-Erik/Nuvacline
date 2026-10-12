@@ -379,7 +379,7 @@ namespace CleanSlate.Tests
                         Invoke(form, "UpdateSummaryLabel", new object[] { });
 
                         Label summary = GetField<Label>(form, "_summaryLabel");
-                        Assert.Contains("Età minima: 24 ore", summary.Text,
+                        Assert.Contains("Soglia temporale: 24 ore", summary.Text,
                             "Il riepilogo deve mostrare la soglia della scansione completata: " + summary.Text);
                         Assert.Equal(1, GetField<DataGridView>(form, "_grid").Rows.Count,
                             "La griglia deve mantenere le righe della scansione completata.");
@@ -390,7 +390,7 @@ namespace CleanSlate.Tests
 
                         Assert.Equal(1, GetField<DataGridView>(form, "_grid").Rows.Count,
                             "Il cambio di soglia non deve alterare le righe di una scansione già completata.");
-                        Assert.Contains("Età minima: 24 ore", GetField<Label>(form, "_summaryLabel").Text,
+                        Assert.Contains("Soglia temporale: 24 ore", GetField<Label>(form, "_summaryLabel").Text,
                             "Il riepilogo deve continuare a mostrare la soglia della scansione completata.");
                         Assert.Equal(TimeSpan.FromHours(24), GetFieldValue(form, "_lastScanMinAge"),
                             "La soglia memorizzata per la scansione completata non deve cambiare.");

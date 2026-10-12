@@ -198,6 +198,7 @@ namespace CleanSlate.Core
 
                 if (info.LastWriteTimeUtc > cutoffUtc)
                 {
+                    result.FilesExcludedByAge++;
                     result.FilesSkipped++;
                     return;
                 }

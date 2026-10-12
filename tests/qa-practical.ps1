@@ -420,7 +420,7 @@ $statusEl = $null
 $summaryEl = $null
 foreach ($e in (Get-Descendants $mainWin)) {
     if ($e.Current.Name -eq 'Pronto.') { $statusEl = $e }
-    if ($e.Current.Name -eq 'Nessuna analisi eseguita.') { $summaryEl = $e }
+    if ($e.Current.Name -eq 'Nessuna analisi eseguita. Soglia temporale: 24 ore.') { $summaryEl = $e }
 }
 Check ($null -ne $statusEl) 'Etichetta di stato individuata'
 Check ($null -ne $summaryEl) 'Etichetta di riepilogo individuata'
@@ -444,8 +444,8 @@ $baselineScanned = -1
 $baselineProposed = -1
 $baselineSkipped = -1
 if ($summaryText -match 'File analizzati:\s*([0-9]+)') { $baselineScanned = [int]$Matches[1] }
-if ($summaryText -match 'Proposti:\s*([0-9]+)') { $baselineProposed = [int]$Matches[1] }
-if ($summaryText -match 'Scartati:\s*([0-9]+)') { $baselineSkipped = [int]$Matches[1] }
+if ($summaryText -match 'Proposti dal filtro:\s*([0-9]+)') { $baselineProposed = [int]$Matches[1] }
+if ($summaryText -match 'Esclusi dalla soglia:\s*([0-9]+)') { $baselineSkipped = [int]$Matches[1] }
 Check ($baselineScanned -gt 0) ('L''analisi reale ha esaminato ' + $baselineScanned + ' file della cartella temporanea dell''utente')
 
 $reportPath1 = $null
@@ -610,7 +610,7 @@ foreach ($e in (Get-Descendants $mainWin2)) {
 $statusId2 = $statusEl2.Current.AutomationId
 $summaryId2 = $null
 foreach ($e in (Get-Descendants $mainWin2)) {
-    if ($e.Current.Name -eq 'Nessuna analisi eseguita.') { $summaryId2 = $e; break }
+    if ($e.Current.Name -eq 'Nessuna analisi eseguita. Soglia temporale: 24 ore.') { $summaryId2 = $e; break }
 }
 $btnAnalyze2 = Find-ByName $mainWin2 'Analizza'
 Invoke-Button $btnAnalyze2
@@ -621,16 +621,16 @@ $summaryEl2 = Wait-ElementByNameLike $mainWin2 'File analizzati:*' 30
 $summaryText2 = if ($null -ne $summaryEl2) { $summaryEl2.Current.Name } else { '' }
 $scanned2 = -1; $proposed2 = -1; $skipped2 = -1
 if ($summaryText2 -match 'File analizzati:\s*([0-9]+)') { $scanned2 = [int]$Matches[1] }
-if ($summaryText2 -match 'Proposti:\s*([0-9]+)') { $proposed2 = [int]$Matches[1] }
-if ($summaryText2 -match 'Scartati:\s*([0-9]+)') { $skipped2 = [int]$Matches[1] }
+if ($summaryText2 -match 'Proposti dal filtro:\s*([0-9]+)') { $proposed2 = [int]$Matches[1] }
+if ($summaryText2 -match 'Esclusi dalla soglia:\s*([0-9]+)') { $skipped2 = [int]$Matches[1] }
 
-# 5 file vecchi della fixture entrano in "Proposti", 1 recente entra in "Scartati",
+# 5 file vecchi della fixture entrano in "Proposti", 1 recente entra in "Esclusi dalla soglia",
 # il file dietro la junction non viene neanche esaminato. I delta sono maggiori o
 # uguali perche' il %TEMP% reale e' condiviso con altri processi del sistema.
 Check (($proposed2 - $baselineProposed) -ge 5) `
-    ('Delta "Proposti" della GUI reale >= +5 (i 5 fixture vecchi): ' + ($proposed2 - $baselineProposed))
+    ('Delta "Proposti dal filtro" della GUI reale >= +5 (i 5 fixture vecchi): ' + ($proposed2 - $baselineProposed))
 Check (($skipped2 - $baselineSkipped) -ge 1) `
-    ('Delta "Scartati" della GUI reale >= +1 (il file recente): ' + ($skipped2 - $baselineSkipped))
+    ('Delta "Esclusi dalla soglia" della GUI reale >= +1 (il file recente): ' + ($skipped2 - $baselineSkipped))
 Check (($scanned2 - $baselineScanned) -ge 6) `
     ('Delta "File analizzati" della GUI reale >= +6: ' + ($scanned2 - $baselineScanned))
 
@@ -653,7 +653,7 @@ $mainWin3 = [System.Windows.Automation.AutomationElement]::FromHandle($proc3.Mai
 $statusEl3 = $null; $summaryId3 = $null
 foreach ($e in (Get-Descendants $mainWin3)) {
     if ($e.Current.Name -eq 'Pronto.') { $statusEl3 = $e }
-    if ($e.Current.Name -eq 'Nessuna analisi eseguita.') { $summaryId3 = $e }
+    if ($e.Current.Name -eq 'Nessuna analisi eseguita. Soglia temporale: 24 ore.') { $summaryId3 = $e }
 }
 $statusId3 = $statusEl3.Current.AutomationId
 $summaryId3v = $summaryId3.Current.AutomationId
@@ -666,10 +666,10 @@ Check ($statusText3 -eq 'Analisi completata.') ('Analisi sul sandbox completata:
 $summaryEl3 = Wait-ElementByNameLike $mainWin3 'File analizzati:*' 30
 $summaryText3 = if ($null -ne $summaryEl3) { $summaryEl3.Current.Name } else { '' }
 $proposed3 = -1; $skipped3 = -1
-if ($summaryText3 -match 'Proposti:\s*([0-9]+)') { $proposed3 = [int]$Matches[1] }
-if ($summaryText3 -match 'Scartati:\s*([0-9]+)') { $skipped3 = [int]$Matches[1] }
+if ($summaryText3 -match 'Proposti dal filtro:\s*([0-9]+)') { $proposed3 = [int]$Matches[1] }
+if ($summaryText3 -match 'Esclusi dalla soglia:\s*([0-9]+)') { $skipped3 = [int]$Matches[1] }
 Check ($proposed3 -eq 4) ('Il sandbox propone esattamente 4 file (recente escluso): ' + $proposed3)
-Check ($skipped3 -eq 1) ('Il sandbox scarta esattamente 1 file recente: ' + $skipped3)
+Check ($skipped3 -eq 1) ('Il sandbox esclude esattamente 1 file recente dalla soglia: ' + $skipped3)
 
 $grid3 = $null
 foreach ($e in (Get-Descendants $mainWin3)) {

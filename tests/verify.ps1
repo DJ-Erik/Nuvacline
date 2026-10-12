@@ -120,6 +120,11 @@ function Find-ByName($scope, $name) {
     return $null
 }
 
+function Find-ByNamePrefix($scope, $prefix) {
+    foreach ($e in (Get-Descendants $scope)) { if ($e.Current.Name -like ($prefix + '*')) { return $e } }
+    return $null
+}
+
 function Find-ById($scope, $id) {
     foreach ($e in (Get-Descendants $scope)) { if ($e.Current.AutomationId -eq $id) { return $e } }
     return $null
@@ -194,7 +199,7 @@ $mainWin = [System.Windows.Automation.AutomationElement]::FromHandle($proc.MainW
 Check ($mainWin.Current.Name -like 'CleanSlate*') ('Titolo della finestra: ' + $mainWin.Current.Name)
 
 $statusEl = Find-ByName $mainWin 'Pronto.'
-$summaryEl = Find-ByName $mainWin 'Nessuna analisi eseguita. Età minima attuale: 24 ore.'
+$summaryEl = Find-ByNamePrefix $mainWin 'Nessuna analisi eseguita.'
 $reportEl = Find-ByName $mainWin 'Report: nessuno generato. Viene scritto al termine di un''analisi o di una pulizia.'
 Check ($null -ne $statusEl) 'Etichetta di stato individuata'
 Check ($null -ne $summaryEl) 'Etichetta di riepilogo individuata'
@@ -287,7 +292,7 @@ Check ($null -ne $gridAfter) ('La tabella dichiara il contenuto: ' +
     $(if ($null -ne $gridAfter) { $gridAfter.Current.Name } else { '(assente)' }))
 
 $proposed = -1
-if ($summaryText -match 'Proposti:\s*([0-9]+)') { $proposed = [int]$Matches[1] }
+if ($summaryText -match 'Proposti dal filtro:\s*([0-9]+)') { $proposed = [int]$Matches[1] }
 $listed = -1
 if ($null -ne $gridAfter -and $gridAfter.Current.Name -match '^([0-9]+) elementi in elenco') { $listed = [int]$Matches[1] }
 Check ($proposed -ge 0 -and $listed -eq $proposed) `

@@ -92,6 +92,9 @@ namespace CleanSlate.Core
         /// <summary>File scartati (troppo recenti, reparse point, scomparsi, ...).</summary>
         public int FilesSkipped { get; set; }
 
+        /// <summary>File esclusi perché più recenti della soglia temporale.</summary>
+        public int FilesExcludedByAge { get; set; }
+
         /// <summary>Cartelle non percorse (reparse point o errori di accesso).</summary>
         public int DirectoriesSkipped { get; set; }
 

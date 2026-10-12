@@ -28,6 +28,9 @@ namespace CleanSlate.Core
         public int FilesScanned { get; set; }
         public int FilesEligible { get; set; }
         public int FilesSkipped { get; set; }
+        public int FilesExcludedByAge { get; set; }
+        public int FilesSelected { get; set; }
+        public string MinAgeText { get; set; }
         public int DirectoriesSkipped { get; set; }
         public int ScanErrors { get; set; }
         public long EstimatedBytes { get; set; }
@@ -68,6 +71,7 @@ namespace CleanSlate.Core
                 data.FilesScanned = scan.FilesScanned;
                 data.FilesEligible = scan.FilesEligible;
                 data.FilesSkipped = scan.FilesSkipped;
+                data.FilesExcludedByAge = scan.FilesExcludedByAge;
                 data.DirectoriesSkipped = scan.DirectoriesSkipped;
                 data.ScanErrors = scan.Errors;
                 data.EstimatedBytes = scan.EstimatedBytes;
