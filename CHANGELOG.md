@@ -27,9 +27,9 @@ Prima versione alpha, portatile e offline.
   mostrato nella finestra e apribile con un pulsante; formati TXT e JSON; la radice temporanea
   è sostituita dal segnaposto `%TEMP%` e il profilo utente non compare.
 - **Suite di test automatica** (`src/CleanSlate.Tests`): runner equivalente a xUnit scritto in
-  C# (nessuna dipendenza di terze parti), **84 test** su percorsi, scanner, cancellazione,
-  report, privacy statica, race condition e menu contestuale, con fixture autoconsistente in
-  `%LOCALAPPDATA%\CleanSlateTests\`.
+  C# (nessuna dipendenza di terze parti), **97 test** su percorsi, scanner, cancellazione,
+  report, privacy statica, race condition, menu contestuale e selezione massiva, con fixture
+  autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\`.
 - **Script di build** `build.ps1` / `build.common.ps1` che compilano con `csc.exe` in-box di
   .NET Framework, eseguono i test e producono il pacchetto portable in
   `artifacts\alpha-0.1\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt`.
@@ -54,10 +54,22 @@ Prima versione alpha, portatile e offline.
   destinata alla pulizia né il motore, e non esegue mai il file: avvia
   `explorer.exe /select,"percorso"` con argomenti quotati. File mancanti, appunti non
   disponibili ed errori di avvio sono gestiti con messaggi in italiano. **11 test** nuovi
-  (`RowContextMenuTests`, suite ora a **84**), verifiche eseguite anche sulla GUI reale del
-  pacchetto (menu visibile con le tre voci, nessuna voce su intestazione/spazi, spunti
-  invariati, tre azioni eseguite). SHA-256 dell'eseguibile con il menu: `d62ed875e4bed957…`
-  (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
+   (`RowContextMenuTests`, suite ora a **84**), verifiche eseguite anche sulla GUI reale del
+   pacchetto (menu visibile con le tre voci, nessuna voce su intestazione/spazi, spunti
+   invariati, tre azioni eseguite). SHA-256 dell'eseguibile con il menu: `d62ed875e4bed957…`
+   (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
+- **Selezione massiva dei risultati**: due nuovi pulsanti *Seleziona tutto* e
+  *Deseleziona tutto* nella riga dei comandi (a destra di *Apri report*), con etichetta
+  *N file selezionati (dimensione)* che diventa *Nessun file selezionato* quando la
+  selezione è azzerata. I comandi agiscono solo sugli spunti della griglia: non toccano i
+  file su disco, non avviano pulizie, non aggirano la conferma e ignorano le righe non
+  associate a un `FileItem`. Stato della selezione sincronizzato tra checkbox, modello
+  (`FileItem.Selected`), etichetta e lista passata al motore (unica fonte di verità).
+  Compatibili con il menu contestuale (apertura/chiusura non alterano la selezione).
+  **13 test** nuovi (`BulkSelectionTests`, suite ora a **97**), verifiche eseguite anche
+  sulla GUI reale del pacchetto (pulsanti visibili, deselezione → pulizia disabilitata,
+  rieselezione → pulizia abilitata, conteggio e dimensione aggiornati). SHA-256
+  dell'eseguibile: `b9eeeea20f29bd48…` (vedi `artifacts/alpha-0.1/SHA256SUMS.txt`).
 
 ### Sicurezza
 

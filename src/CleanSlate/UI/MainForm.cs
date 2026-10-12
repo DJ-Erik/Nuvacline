@@ -29,6 +29,9 @@ namespace CleanSlate.UI
         private Button _btnClean;
         private Button _btnCancel;
         private Button _btnReport;
+        private Button _btnSelectAll;
+        private Button _btnDeselectAll;
+        private Label _lblSelection;
         private Label _statusLabel;
         private ProgressBar _progress;
         private Label _summaryLabel;
@@ -127,6 +130,23 @@ namespace CleanSlate.UI
             _btnClean = CreateButton("btnClean", "Pulisci selezionati", 132, 78, 160, OnCleanClick);
             _btnCancel = CreateButton("btnCancel", "Annulla", 300, 78, 100, OnCancelClick);
             _btnReport = CreateButton("btnReport", "Apri report", 408, 78, 120, OnReportClick);
+
+            // Comandi di selezione massiva: agiscono solo sugli spunti della griglia,
+            // mai sui file su disco e mai bypassando la conferma di pulizia.
+            _btnSelectAll = CreateButton("btnSelectAll", "Seleziona tutto", 536, 78, 110, OnSelectAllClick);
+            _btnDeselectAll = CreateButton("btnDeselectAll", "Deseleziona tutto", 654, 78, 120, OnDeselectAllClick);
+
+            _lblSelection = new Label();
+            _lblSelection.Name = "lblSelection";
+            _lblSelection.AutoSize = false;
+            _lblSelection.Location = new Point(782, 78);
+            _lblSelection.Size = new Size(144, 30);
+            _lblSelection.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _lblSelection.AutoEllipsis = true;
+            _lblSelection.ForeColor = Color.DimGray;
+            _lblSelection.TextAlign = ContentAlignment.MiddleLeft;
+            _lblSelection.Text = "Nessun file selezionato";
+            Controls.Add(_lblSelection);
 
             _statusLabel = new Label();
             _statusLabel.Name = "lblStatus";
@@ -267,6 +287,8 @@ namespace CleanSlate.UI
             _btnAnalyze.Enabled = !busy;
             _btnReport.Enabled = !busy;
             _btnCancel.Enabled = busy;
+            _btnSelectAll.Enabled = !busy;
+            _btnDeselectAll.Enabled = !busy;
             _grid.Enabled = !busy;
             UpdateSelectionState();
         }
@@ -282,11 +304,38 @@ namespace CleanSlate.UI
             return count;
         }
 
+        private long SumSelectedBytes()
+        {
+            long total = 0;
+            foreach (DataGridViewRow row in _grid.Rows)
+            {
+                object value = row.Cells["colSelected"].Value;
+                if (!(value is bool) || !(bool)value) continue;
+                FileItem item = row.Tag as FileItem;
+                if (item != null) total += item.Length;
+            }
+            return total;
+        }
+
         private void UpdateSelectionState()
         {
             if (_loadingGrid) return;
             int selected = CountSelected();
             _btnClean.Enabled = !_busy && selected > 0;
+            UpdateSelectionLabel(selected);
+        }
+
+        private void UpdateSelectionLabel(int selected)
+        {
+            if (_lblSelection == null) return;
+            if (selected <= 0)
+            {
+                _lblSelection.Text = "Nessun file selezionato";
+                return;
+            }
+            long bytes = SumSelectedBytes();
+            _lblSelection.Text = selected.ToString(CultureInfo.InvariantCulture)
+                + " file selezionati (" + ByteFormatter.Format(bytes) + ")";
         }
 
         private void UpdateSummaryLabel()
@@ -483,6 +532,7 @@ namespace CleanSlate.UI
             {
                 _loadingGrid = false;
                 UpdateGridAccessibleName();
+                UpdateSelectionState();
             }
         }
 
@@ -507,6 +557,16 @@ namespace CleanSlate.UI
 
         #region Pulizia
 
+        private string BuildCleanQuestion(List<FileItem> selected)
+        {
+            long bytes = 0;
+            for (int i = 0; i < selected.Count; i++) bytes += selected[i].Length;
+            return string.Format(
+                "Eliminare {0} file per un totale stimato di {1}?\r\n\r\nI file eliminati non potranno essere ripristinati.\r\n\r\nVuole continuare?",
+                selected.Count,
+                ByteFormatter.Format(bytes));
+        }
+
         private async void OnCleanClick(object sender, EventArgs e)
         {
             if (_busy) return;
@@ -530,13 +590,7 @@ namespace CleanSlate.UI
                 return;
             }
 
-            long bytes = 0;
-            for (int i = 0; i < selected.Count; i++) bytes += selected[i].Length;
-
-            string question = string.Format(
-                "Eliminare {0} file per un totale stimato di {1}?\r\n\r\nI file eliminati non potranno essere ripristinati.\r\n\r\nVuole continuare?",
-                selected.Count,
-                ByteFormatter.Format(bytes));
+            string question = BuildCleanQuestion(selected);
 
             DialogResult confirmation = MessageBox.Show(
                 this, question, "Conferma pulizia",
@@ -826,6 +880,45 @@ namespace CleanSlate.UI
             bool selected = value is bool && (bool)value;
             if (item != null) item.Selected = selected;
             UpdateSelectionState();
+        }
+
+        /// <summary>
+        /// Seleziona tutti e soli i file validi attualmente visualizzati.
+        /// Non avvia pulizie, non tocca i file su disco, non aggira la conferma.
+        /// </summary>
+        private void OnSelectAllClick(object sender, EventArgs e)
+        {
+            SetAllChecks(true);
+        }
+
+        /// <summary>
+        /// Deseleziona tutti i file attualmente selezionati. Non cancella alcun file.
+        /// </summary>
+        private void OnDeselectAllClick(object sender, EventArgs e)
+        {
+            SetAllChecks(false);
+        }
+
+        private void SetAllChecks(bool state)
+        {
+            _loadingGrid = true;
+            try
+            {
+                foreach (DataGridViewRow row in _grid.Rows)
+                {
+                    FileItem item = row.Tag as FileItem;
+                    if (item == null) continue;
+                    DataGridViewCheckBoxCell cell = row.Cells["colSelected"] as DataGridViewCheckBoxCell;
+                    if (cell == null) continue;
+                    cell.Value = state;
+                    item.Selected = state;
+                }
+            }
+            finally
+            {
+                _loadingGrid = false;
+                UpdateSelectionState();
+            }
         }
 
         #endregion

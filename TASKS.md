@@ -228,7 +228,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | 6 | I percorsi esterni vengono rifiutati | [x] | `PathSafetyTests` + `SecurityAuditTests.PathSafety_*` (`..`, reparse, radice, `\\?\`, `\\.\`, ADS, spazi/punti finali) |
 | 7 | Gli errori non provocano crash non gestiti | [x] | `ScannerTests`/`CleanerTests` (ACL negata, file bloccato, cartella inesistente) |
 | 8 | La reportistica funziona | [x] | `ReportTests` + `verify.ps1` (file creato, contenuto conforme, percorso mostrato in GUI) |
-| 9 | La suite di test obbligatori passa | [x] | **84/84** su 3 esecuzioni consecutive (era 73/73 prima del menu contestuale) |
+| 9 | La suite di test obbligatori passa | [x] | **97/97** su 3 esecuzioni consecutive (era 84/84 prima della selezione massiva, 73/73 prima del menu contestuale) |
 | 10 | La build Release viene generata | [x] | `artifacts/alpha-0.1/` + `SHA256SUMS.txt` ricalcolato e riverificato |
 | 11 | L'eseguibile viene avviato e verificato | [x] | `verify.ps1` **31/31** |
 | 12 | La documentazione descrive il prodotto | [x] | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |
@@ -273,11 +273,9 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
    con diritti di scrittura sulla stessa cartella potrebbe sostituire una directory con una
    junction in quell'intervallo. Eliminare del tutto la finestra richiederebbe l'apertura del
    file con `FILE_FLAG_OPEN_REPARSE_POINT` via P/Invoke: non inclusa in 0.1.
-9. **Nessun contatore di selezione nella GUI**: la selezione è visibile solo tramite la
-   colonna "Selez." e lo stato del pulsante; il conteggio degli elementi selezionati compare
-   soltanto nella finestra di conferma. Non è una falla di sicurezza (la conferma mostra
-   comunque numero e dimensione prima di cancellare) ma è una lacuna di usabilità non
-   corretta in questa versione, per non introdurre funzionalità nuove durante l'audit.
+9. ~~**Nessun contatore di selezione nella GUI**~~: corretto con la selezione massiva —
+   l'etichetta accanto ai pulsanti mostra *N file selezionati (dimensione)* oppure
+   *Nessun file selezionato*, aggiornata a ogni modifica degli spunti.
 10. **Build non riproducibile bit per bit**: `csc.exe` di .NET Framework incorpora un MVID
    diverso a ogni compilazione, quindi la stessa sorgente produce un'eseguibile con hash
    SHA-256 diverso. `SHA256SUMS.txt` va quindi verificato **solo rispetto al pacchetto con
@@ -288,11 +286,12 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Verifica | Risultato |
 |---|---|
 | Compilazione Release x64 | `bin/Release/CleanSlate.exe` |
-| Suite di test | **84/84** su 3 esecuzioni consecutive (73/73 nella validazione pre-beta, +11 con il menu contestuale) |
+| Suite di test | **97/97** su 3 esecuzioni consecutive (73/73 nella validazione pre-beta, +11 con il menu contestuale, +13 con la selezione massiva) |
 | Residui del fixture di test dopo la suite | **0** |
 | Verifica end-to-end GUI (`tests/verify.ps1`) | **31/31** su `bin/Release` e di nuovo **31/31** sull'exe del pacchetto |
 | Validazione pratica pre-beta (`tests/qa-practical.ps1`) | **OK** su vero `%TEMP%` e sandbox GUI (id `f0382398`); 0 residui, 0 file preesistenti persi, hash pacchetto invariato; deselezione GUI non eseguita (sessione bloccata), verificata al motore |
 | Menu contestuale risultati (clic destro) | **11 test** (`RowContextMenuTests`) + probe GUI reale sul pacchetto: menu su riga valida, tre voci eseguite (nome in appunti, cartella in appunti, `Esplora /select` su Temp), nessun menu su intestazione/spazi, spunti invariati |
+| Selezione massiva (Seleziona/Deseleziona tutto) | **13 test** (`BulkSelectionTests`) + probe GUI reale sul pacchetto: pulsanti visibili e funzionanti su 3108 file reali, deselezione → pulizia disabilitata + "Nessun file selezionato", rieselezione → pulizia abilitata + conteggio/dimensione, righe non-file ignorate, nuova scansione senza selezioni obsolete |
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
@@ -316,7 +315,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Junction / symlink | Test | Non seguiti in scansione e rilevati in cancellazione | `Clean_PathThroughJunction_…`, `Clean_PathComponentReplacedByJunctionAfterScan_…` | Finestra residua fino a `File.Delete` |
 | File sostituito dopo la scansione | Test (directory, junction, tocco, eliminazione) | Sempre saltato, contenuti intatti | 4 test `SecurityAuditTests`/`CleanerTests` | — |
 | Elementi non selezionati | Test GUI + test motore | Non arrivano al motore e sopravvivono | `Ui_UncheckedItemsAreNotPassedToCleanerAndSurvive`, `Clean_OnlyItemsExplicitlyPassedToCleanerAreDeleted` | Clic su singola checkbox non automatabile |
-| Visibilità della selezione | Test GUI + lettura e2e | Colonna "Selez.", pulsante abilitato/sdisabilitato, conferma con conteggio | `verify.ps1`, `SecurityAuditTests.Ui_*` | Nessun contatore "N selezionati" in finestra |
+| Visibilità della selezione | Test GUI + lettura e2e | Colonna "Selez.", pulsante abilitato/sdisabilitato, conferma con conteggio, etichetta "N file selezionati (dimensione)" | `verify.ps1`, `SecurityAuditTests.Ui_*`, `BulkSelectionTests`, probe GUI | — |
 | File recenti | Test | Saltati in scansione e in cancellazione | `Scan_FileNewerThanLimit_IsExcluded`, `Clean_FileNewerThanLimit_IsSkipped` | — |
 | File bloccati / ACL negate | Test | Saltati o conteggiati come errore, operazione prosegue | `Clean_LockedFile_…`, `Clean_ReadOnlyFile_…`, `Scan_AccessDeniedDirectory_…` | — |
 | Cancellazione parziale / annullamento | Test | Cooperativo, nessun tocco sui residui | `Clean_CancellationIsCooperative…`, `Scan_CancellationDuringScan…` | — |
@@ -329,7 +328,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 
 ```powershell
 cd C:\Users\User\Documents\Experiments\cleanslate
-powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 84/84 attesi
+powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1   # 97/97 attesi
 powershell -ExecutionPolicy Bypass -File tests\verify.ps1      # 31/31 attesi
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package    # pacchetto portable
 ```

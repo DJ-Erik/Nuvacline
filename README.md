@@ -6,9 +6,10 @@ CleanSlate è un pulitore di file temporanei per Windows, **portatile, offline, 
 
 Analizza la cartella temporanea dell'utente corrente, mostra gli elementi recuperabili in una
 lista dove si sceglie cosa eliminare, chiede una **conferma esplicita** prima di cancellare e
-produce un **report locale** il cui percorso è mostrato nella finestra. Un **menu contestuale**
-(clic destro su una riga) permette di copiare il nome o la cartella del file e di aprirlo in
-Esplora file selezionandolo, senza mai eseguirlo.
+produce un **report locale** il cui percorso è mostrato nella finestra. Comandi **Seleziona
+tutto** e **Deseleziona tutto** permettono di spuntare o azzerare l'intera lista con un solo
+clic, mentre un **menu contestuale** (clic destro su una riga) permette di copiare il nome o
+la cartella del file e di aprirlo in Esplora file selezionandolo, senza mai eseguirlo.
 
 CleanSlate **non promette di accelerare il computer**. Rimuove soltanto file temporanei
 dell'utente corrente che sono più vecchi di 24 ore.
@@ -78,7 +79,7 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 84 test
+│   └── CleanSlate.Tests/  runner di test + 97 test
 ├── artifacts/alpha-0.1/   pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
@@ -108,8 +109,9 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **84/84 superati**, ripetuto su 3 esecuzioni consecutive |
-| Verifica end-to-end GUI (`verify.ps1`) | **31/31 controlli superati** |
+| Suite di test | **97/97 superati** (84 preesistenti invariati + 13 nuovi), ripetuto su 3 esecuzioni consecutive |
+| Verifica end-to-end GUI (`verify.ps1`) | **31/31 controlli superati** sull'exe del pacchetto |
+| Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Rete (campionamento runtime) | **0 connessioni TCP in uscita** su almeno 40 campionamenti durante l'analisi reale |
 | Registro di sistema | Invariato prima/dopo l'esecuzione |
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
@@ -131,6 +133,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Report TXT/JSON, sanitizzazione percorsi, assenza di scritture | `ReportTests` |
 | Privacy statica (nessuna API di rete/registro/telemetria/shell distruttiva) | `PrivacyTests` |
 | Menu contestuale: nome/cartella copiati, visibilità solo su righe valide, spunti invariati, Esplora `/select` senza eseguire il file | `RowContextMenuTests` |
+| Selezione massiva: Seleziona/Deseleziona tutto, conteggio, dimensione, nuova scansione, righe non-file, sync con motore e menu contestuale | `BulkSelectionTests` |
 
 I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il
 reale temporaneo dell'utente) e lo rimuovono integralmente, ACL comprese.
