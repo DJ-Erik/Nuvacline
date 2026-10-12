@@ -1,4 +1,4 @@
-# CleanSlate 0.3.0
+# CleanSlate 0.3.5
 
 <img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
 
@@ -12,7 +12,8 @@ clic, mentre un **menu contestuale** (clic destro su una riga) permette di copia
 la cartella del file e di aprirlo in Esplora file selezionandolo, senza mai eseguirlo.
 Il pulsante **?** apre la finestra **Informazioni** (scopo, privacy, avvertenze) e il pulsante
 **⚙** apre le **Impostazioni**, dove si attiva o disattiva la conservazione dei report e si
-apre la cartella che li contiene.
+apre la cartella che li contiene. L'interfaccia segue **automaticamente il tema chiaro/scuro
+di Windows**, aggiornandosi anche al cambio di tema mentre il programma è aperto.
 
 CleanSlate **non promette di accelerare il computer**. Rimuove soltanto file temporanei
 dell'utente corrente che sono più vecchi di 24 ore (soglia configurabile da interfaccia:
@@ -46,7 +47,8 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
 ## Cosa non fa
 
 - Non si collega a Internet, non raccoglie e non trasmette dati.
-- Non modifica il registro di Windows.
+- Non modifica il registro di Windows: l'unica lettura è l'impostazione di tema
+  (chiaro/scuro) usata per colorare l'interfaccia.
 - Non installa servizi, attività pianificate, voci di avvio automatico o processi residenti.
 - Non contiene pubblicità, telemetria, account, login o aggiornamenti automatici.
 - Non elimina file senza una conferma esplicita.
@@ -75,6 +77,11 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
    cancellazione e il suo percorso di conferma sono esercitati dai test su fixture dedicati.
 8. **La selezione della singola riga non è automatabile**: la griglia WinForms non espone le
    righe come elementi di automazione.
+9. **Controlli nativi non tematizzati**: le finestre di sistema (MessageBox), il ComboBox
+   della soglia e la barra del titolo usano i colori nativi di Windows anche in tema scuro:
+   WinForms su .NET Framework non espone un controllo affidabile per ridisegnarli, quindi
+   restano al rendering del sistema. La palette scura copre finestra, testi, tabella,
+   pulsanti, menu, dialogo Informazioni e etichette.
 
 ## Struttura del repository
 
@@ -89,8 +96,8 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 145 test
-├── artifacts/alpha-0.3/   pacchetto distribuibile
+│   └── CleanSlate.Tests/  runner di test + 158 test
+├── artifacts/alpha-0.3.5/ pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -104,7 +111,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\alpha-0.3
+# compilazione + test + pacchetto portable in artifacts\alpha-0.3.5
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -119,7 +126,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **145/145 superati** (126 di 0.2.0 invariati + 19 nuovi), ripetuto su 2 esecuzioni consecutive |
+| Suite di test | **153/158 superati** (145 di 0.3.0 invariati + 13 nuovi `ThemeTests`); i 5 residui sono `RowContextMenuTests` bloccati dall'ambiente (sessione bloccata → clipboard non disponibile), non difetti di prodotto |
 | Verifica end-to-end GUI (`verify.ps1`) | **41/41 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
@@ -128,7 +135,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\alpha-0.3\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\alpha-0.3.5\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -142,12 +149,13 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Race condition: file toccato/sostituito dopo la scansione, junction sostituita | `SecurityAuditTests` |
 | Selezione: solo gli elementi selezionati arrivano alla cancellazione, anche dopo l'ordinamento | `SecurityAuditTests` |
 | Report TXT/JSON, sanitizzazione percorsi, assenza di scritture | `ReportTests` |
-| Privacy statica (nessuna API di rete/registro/telemetria/shell distruttiva) | `PrivacyTests` |
+| Privacy statica (nessuna API di rete/telemetria/shell distruttiva; registro accessibile solo in lettura per il tema) | `PrivacyTests` |
 | Menu contestuale: nome/cartella copiati, visibilità solo su righe valide, spunti invariati, Esplora `/select` senza eseguire il file | `RowContextMenuTests` |
 | Selezione massiva: Seleziona/Deseleziona tutto, conteggio, dimensione, nuova scansione, righe non-file, sync con motore e menu contestuale | `BulkSelectionTests` |
 | Soglia di scansione: default 24 ore, mapping opzioni, persistenza/ricaricamento, fallback, esclusione/inclusione file, wiring GUI→scanner, nessun auto-scan, non retroattività, conferma | `ScanThresholdTests` |
 | Riepilogo di scansione e conteggi (scartati/esclusi dalla soglia, selezionati, report coerente) | `ScanSummaryTests` |
 | Informazioni e impostazioni: finestra modale, versione, testo privacy, menu ⚙, spunta conservazione report, persistenza KeepReports, default/valori non validi, report su richiesta, errori di salvataggio, nessuna cancellazione retroattiva | `InfoSettingsTests` |
+| Tema chiaro/scuro: rilevamento con seam, palette centralizzata (chiaro = colori di sistema, scuro = antracite fisso ad alto contrasto), applicazione/ripristino su `MainForm`, aggiornamento live `WM_THEMECHANGED`/`WM_SETTINGCHANGE`/`ImmersiveColorSet`, fallback chiaro su eccezione, nessun colore hardcoded fuori dalla palette, dialogo Informazioni, etichetta report | `ThemeTests` |
 
 I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il
 reale temporaneo dell'utente) e lo rimuovono integralmente, ACL comprese.

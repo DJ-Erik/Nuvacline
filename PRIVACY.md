@@ -1,6 +1,6 @@
 # Privacy di CleanSlate
 
-Documento relativo alla versione **0.3.0**.
+Documento relativo alla versione **0.3.5**.
 
 ## In una frase
 
@@ -15,6 +15,7 @@ funziona interamente sulla macchina e senza rete.
 | Dimensioni e date dei file | Idem |
 | Percorsi | Mostrati nella finestra; nel report la radice temporanea è sostituita dal segnaposto `%TEMP%` |
 | Nome utente / profilo utente | **Mai** scritto nel report |
+| Impostazione di tema Windows (chiaro/scuro) | Letta in sola lettura per colorare l'interfaccia; non salvata, non trasmessa |
 | Report locale | Scritto solo in `%LOCALAPPDATA%\CleanSlate\reports\` sul proprio PC |
 | Dati di telemetria | **Nessuno** |
 
@@ -26,7 +27,10 @@ percorso reale della cartella temporanea.
 
 - Nessuna connessione di rete: nessun controllo aggiornamenti, nessuna telemetria, nessuna
   pubblicità, nessun tracciamento, nessun download.
-- Nessuna lettura o scrittura del registro di Windows.
+- Nessuna scrittura nel registro di Windows. L'unica **lettura** è l'impostazione di
+  tema dell'utente (`HKCU\...\Themes\Personalize`, valore `AppsUseLightTheme`), usata
+  esclusivamente per scegliere la palette chiara o scura dell'interfaccia: nessuna chiave
+  viene creata, aperta in scrittura o eliminata.
 - Nessun servizio, nessuna attività pianificata, nessuna voce di avvio automatico.
 - Nessun processo rimasto in esecuzione dopo la chiusura della finestra.
 - Nessun cookie, nessun identificativo, nessun account, nessun file di configurazione nella
@@ -39,7 +43,9 @@ percorso reale della cartella temporanea.
 
 - Le sorgenti non contengono chiamate a API di rete (`WebRequest`, `HttpClient`,
   `Socket`, `Dns`, `WebClient`).
-- Le sorgenti non contengono API di registro (`Microsoft.Win32.Registry`, `RegistryKey`).
+- Le sorgenti non contengono API di registro **gestite** (`Microsoft.Win32.Registry`,
+  `RegistryKey`): l'unico accesso al registro è una chiamata P/Invoke sola lettura
+  (`RegGetValue` su `advapi32.dll`) del valore di tema, con seam sostituibile dai test.
 - Le sorgenti non contengono telemetria né persistenza in avvio automatico.
 - Le sorgenti non contengono invocazioni di shell o comandi distruttivi.
 - L'assembly non referenzia assembly di rete: solo `System`, `System.Core`, `System.Drawing`,
@@ -70,7 +76,7 @@ Sull'artefatto destinato ai beta tester, non sui sorgenti:
 | Assembly referenziati (riflessione) | Solo `mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms` |
 | Tipi pubblici esportati | 22, tutti di CleanSlate |
 | Nomi di metadati di rete (`WebRequest`, `WebClient`, `Socket`, `Dns`, `HttpClient`, `TcpClient`, `UdpClient`, `ServicePoint`, `Ftp`, `Smtp`) | Nessuno, né in ASCII né in UTF-16 |
-| Nomi di metadati di registro (`RegistryKey`) | Nessuno |
+| Nomi di metadati di registro (`RegistryKey`) | Nessuno: la 0.3.5 contiene la sola importazione P/Invoke `RegGetValue` (`advapi32.dll`, ASCII) per la lettura del tema, verificata sulle stringhe dell'exe; `Microsoft.Win32` e `RegistryKey` assenti sia in ASCII sia in UTF-16 |
 | Stringhe `http://` presenti | 2, entrambe namespace XML del manifest incorporato (`schemas.microsoft.com/SMI/...`): identificativi, non indirizzi |
 | File di configurazione nel pacchetto | Nessuno (solo `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt`) |
 | Manifest incorporato | `requestedExecutionLevel level="asInvoker" uiAccess="false"` |

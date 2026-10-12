@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -72,6 +73,9 @@ namespace CleanSlate.UI
         private Func<bool, bool> _saveKeepReports;
         private Func<string> _reportsFolder;
         private Action _showInfoDialog;
+        private Func<AppTheme> _detectTheme;
+        private ThemePalette _palette = ThemePalette.For(AppTheme.Light);
+        private AppTheme _currentTheme = AppTheme.Light;
 
         public MainForm()
         {
@@ -88,6 +92,8 @@ namespace CleanSlate.UI
             _saveKeepReports = delegate(bool keep) { return ScanSettings.SaveKeepReports(keep); };
             _reportsFolder = delegate { return ReportsFolderDefault(); };
             _showInfoDialog = delegate { ShowInfoDialog(); };
+            _detectTheme = delegate { return WindowsTheme.Detect(); };
+            ApplyTheme();
             LoadThresholdSetting();
             LoadKeepReportsSetting();
             UpdateSummaryLabel();
@@ -164,7 +170,6 @@ namespace CleanSlate.UI
             _lblSelection.Size = new Size(144, 30);
             _lblSelection.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             _lblSelection.AutoEllipsis = true;
-            _lblSelection.ForeColor = Color.DimGray;
             _lblSelection.TextAlign = ContentAlignment.MiddleLeft;
             _lblSelection.Text = "Nessun file selezionato";
             Controls.Add(_lblSelection);
@@ -186,7 +191,6 @@ namespace CleanSlate.UI
             _lblThreshold.Location = new Point(ClientSize.Width - 254, 114);
             _lblThreshold.Size = new Size(80, 18);
             _lblThreshold.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _lblThreshold.ForeColor = Color.DimGray;
             _lblThreshold.Text = "Età minima:";
             Controls.Add(_lblThreshold);
 
@@ -246,7 +250,6 @@ namespace CleanSlate.UI
             _reportLabel.Size = new Size(ClientSize.Width - 28, 16);
             _reportLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _reportLabel.AutoEllipsis = true;
-            _reportLabel.ForeColor = Color.DimGray;
             _reportLabel.Text = "Report: nessuno generato.";
             Controls.Add(_reportLabel);
 
@@ -266,10 +269,8 @@ namespace CleanSlate.UI
             _grid.MultiSelect = false;
             _grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
             _grid.EditMode = DataGridViewEditMode.EditOnEnter;
-            _grid.BackgroundColor = SystemColors.Window;
             _grid.BorderStyle = BorderStyle.FixedSingle;
             _grid.EnableHeadersVisualStyles = false;
-            _grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(240, 240, 240);
             _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             _grid.ColumnHeadersHeight = 26;
             BuildGridColumns();
@@ -285,7 +286,6 @@ namespace CleanSlate.UI
             _footnoteLabel.Location = new Point(14, ClientSize.Height - 40);
             _footnoteLabel.Size = new Size(ClientSize.Width - 28, 34);
             _footnoteLabel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            _footnoteLabel.ForeColor = Color.DimGray;
             _footnoteLabel.Text = "Prima della pulizia puoi deselezionare qualsiasi file. "
                 + "La cancellazione richiede una conferma e i file eliminati non sono recuperabili.";
             Controls.Add(_footnoteLabel);
@@ -947,18 +947,18 @@ namespace CleanSlate.UI
             if (!string.IsNullOrEmpty(_lastReportPath) && File.Exists(_lastReportPath))
             {
                 _reportLabel.Text = "Report: " + _lastReportPath;
-                _reportLabel.ForeColor = Color.DimGray;
+                _reportLabel.ForeColor = _palette.TextSecondary;
             }
             else if (!_keepReports)
             {
                 _reportLabel.Text = "Report: conservazione disattivata. "
                     + "Il pulsante \u00abApri report\u00bb genera un report su richiesta.";
-                _reportLabel.ForeColor = Color.Gray;
+                _reportLabel.ForeColor = _palette.TextMuted;
             }
             else
             {
                 _reportLabel.Text = "Report: nessuno generato. Viene scritto al termine di un'analisi o di una pulizia.";
-                _reportLabel.ForeColor = Color.Gray;
+                _reportLabel.ForeColor = _palette.TextMuted;
             }
         }
 
@@ -1039,12 +1039,15 @@ namespace CleanSlate.UI
             dialog.ShowInTaskbar = false;
             dialog.StartPosition = FormStartPosition.CenterParent;
             dialog.Font = Font;
+            dialog.BackColor = _palette.Surface;
+            dialog.ForeColor = _palette.Text;
 
             Label body = new Label();
             body.Name = "lblInfoBody";
             body.AutoSize = true;
             body.MaximumSize = new Size(440, 0);
             body.Location = new Point(16, 16);
+            body.ForeColor = _palette.Text;
             body.Text = BuildInfoText();
             dialog.Controls.Add(body);
 
@@ -1055,6 +1058,7 @@ namespace CleanSlate.UI
             ok.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             ok.DialogResult = DialogResult.OK;
             dialog.Controls.Add(ok);
+            ApplyButtonTheme(ok);
 
             int width = Math.Max(440, body.Width) + 32;
             int height = body.Bottom + 16 + ok.Height + 16;
@@ -1079,7 +1083,9 @@ namespace CleanSlate.UI
                 + "senza servizi e senza dipendenze di terze parti.\r\n\r\n"
                 + "Privacy\r\n"
                 + "Nessuna connessione di rete, nessun dato raccolto, nessuna modifica al registro, "
-                + "nessun avvio automatico. Analisi, riepilogo e report restano su questo computer.\r\n\r\n"
+                + "nessun avvio automatico. Analisi, riepilogo e report restano su questo computer. "
+                + "Per adattare l'interfaccia viene letta soltanto l'impostazione di tema Windows "
+                + "(chiaro/scuro): nessuna scrittura.\r\n\r\n"
                 + "Funzionamento\r\n"
                 + "Analisi, filtro temporale, anteprima dei risultati, selezione riga per riga e "
                 + "conferma prima di ogni pulizia. Il report locale viene scritto nella cartella "
@@ -1212,6 +1218,147 @@ namespace CleanSlate.UI
             {
                 return false;
             }
+        }
+
+        #endregion
+
+        #region Tema chiaro/scuro
+
+        private const int WmSettingChange = 0x001A;
+        private const int WmThemeChanged = 0x031A;
+
+        /// <summary>
+        /// Applica al tema corrente (rilevato dal seam _detectTheme) tutti i
+        /// controlli della finestra. Questa e' l'unica sede di assegnazione
+        /// cromatica dell'applicazione: ogni valore proviene centralmente da
+        /// ThemePalette, dove il tema chiaro riproduce i colori di sistema e il
+        /// tema scuro la palette antracite fissa. Un tema non riconosciuto o un
+        /// errore di lettura cadono sempre sul chiaro.
+        /// </summary>
+        private void ApplyTheme()
+        {
+            AppTheme theme = AppTheme.Light;
+            try
+            {
+                if (_detectTheme != null) theme = _detectTheme();
+            }
+            catch (Exception)
+            {
+                theme = AppTheme.Light;
+            }
+
+            ApplyThemeCore(theme);
+        }
+
+        /// <summary>Applica un tema gia' rilevato a tutti i controlli della finestra.</summary>
+        private void ApplyThemeCore(AppTheme theme)
+        {
+            _currentTheme = theme;
+            _palette = ThemePalette.For(theme);
+            ThemePalette palette = _palette;
+
+            BackColor = palette.Surface;
+            ForeColor = palette.Text;
+
+            _titleLabel.ForeColor = palette.Text;
+            _statusLabel.ForeColor = palette.Text;
+            _summaryLabel.ForeColor = palette.Text;
+            _lblSelection.ForeColor = palette.TextSecondary;
+            _lblThreshold.ForeColor = palette.TextSecondary;
+            _footnoteLabel.ForeColor = palette.TextSecondary;
+
+            ApplyButtonTheme(_btnAnalyze);
+            ApplyButtonTheme(_btnClean);
+            ApplyButtonTheme(_btnCancel);
+            ApplyButtonTheme(_btnReport);
+            ApplyButtonTheme(_btnSelectAll);
+            ApplyButtonTheme(_btnDeselectAll);
+            ApplyButtonTheme(_btnInfo);
+            ApplyButtonTheme(_btnSettings);
+
+            _grid.BackgroundColor = palette.GridBack;
+            _grid.DefaultCellStyle.BackColor = palette.GridBack;
+            _grid.DefaultCellStyle.ForeColor = palette.GridText;
+            _grid.ColumnHeadersDefaultCellStyle.BackColor = palette.GridHeaderBack;
+            _grid.ColumnHeadersDefaultCellStyle.ForeColor = palette.GridHeaderText;
+
+            if (_rowMenu != null)
+            {
+                _rowMenu.BackColor = palette.MenuBack;
+                _rowMenu.ForeColor = palette.MenuText;
+            }
+            if (_settingsMenu != null)
+            {
+                _settingsMenu.BackColor = palette.MenuBack;
+                _settingsMenu.ForeColor = palette.MenuText;
+            }
+
+            // L'etichetta del report cambia colore in base allo stato: si riallinea
+            // all'ultima impostazione testuale dopo il cambio di tema.
+            UpdateReportLabel();
+        }
+
+        /// <summary>
+        /// Colore di un pulsante secondo il tema attivo. Nel tema chiaro il
+        /// pulsante torna al rendering nativo di Windows (assegnazione di sistema
+        /// piu' attivazione visiva per ultima, cosi' da annullare un eventuale
+        /// tema scuro precedente); nel tema scuro i colori arrivano dalla palette.
+        /// </summary>
+        private void ApplyButtonTheme(Button button)
+        {
+            if (button == null) return;
+
+            button.BackColor = _palette.ButtonBack;
+            button.ForeColor = _palette.ButtonText;
+            button.UseVisualStyleBackColor = _palette.NativeButtons;
+        }
+
+        /// <summary>
+        /// Aggiornamento in tempo reale del tema. Quando Windows cambia tema o
+        /// schema colori invia WM_SETTINGCHANGE (area "ImmersiveColorSet") oppure
+        /// WM_THEMECHANGED alle finestre: qui il messaggio viene riconosciuto, il
+        /// tema riletto tramite il seam e la palette riapplicata solo se il valore
+        /// effettivamente cambiato. Nessuna registrazione, nessun thread, nessuna
+        /// spesa quando i messaggi non riguardano il tema.
+        /// </summary>
+        protected override void WndProc(ref Message m)
+        {
+            base.WndProc(ref m);
+
+            if (m.Msg == WmThemeChanged)
+            {
+                ApplyThemeIfChanged();
+                return;
+            }
+            if (m.Msg != WmSettingChange) return;
+
+            string area = null;
+            if (m.LParam != IntPtr.Zero) area = Marshal.PtrToStringUni(m.LParam);
+            if (area != null
+                && !string.Equals(area, "ImmersiveColorSet", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            ApplyThemeIfChanged();
+        }
+
+        /// <summary>
+        /// Rilegge il tema e riapplica la palette solo quando il valore e'
+        /// cambiato: un errore di lettura lascia invariato il tema attuale.
+        /// La lettura e' una sola per messaggio (nessuna doppia rilevazione).
+        /// </summary>
+        private void ApplyThemeIfChanged()
+        {
+            AppTheme detected;
+            try
+            {
+                detected = _detectTheme != null ? _detectTheme() : AppTheme.Light;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+            if (detected == _currentTheme) return;
+            ApplyThemeCore(detected);
         }
 
         #endregion

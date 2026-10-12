@@ -2,6 +2,57 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.3.5] — 2026-10-12
+
+Tema chiaro/scuro automatico. L'interfaccia segue le preferenze di Windows e si aggiorna
+anche al cambio di tema mentre il programma è aperto; la versione ufficiale è 0.3.5.
+
+### Aggiunto
+
+- **Tema chiaro/scuro automatico**: al avvio e a ogni cambio di tema di Windows, CleanSlate
+  legge l'impostazione `AppsUseLightTheme` (`HKCU\...\Themes\Personalize`) in sola lettura
+  tramite P/Invoke `RegGetValue` (nessuna API di registro gestita, nessuna assembly
+  aggiuntiva, nessuna chiave creata) e applica la palette corrispondente. Qualsiasi errore
+  o valore assente **ricade sul tema chiaro**, che resta identico a tutte le versioni
+  precedenti (zero regressione).
+- **Palette centralizzata** (`ThemePalette`): ogni colore dell'applicazione è definito una
+  sola volta per tema e applicato dall'unico punto `MainForm.ApplyTheme` (finestra, testi,
+  tabella e intestazioni, pulsanti, menu, dialogo Informazioni, etichetta del report). Il
+  tema chiaro usa i colori di sistema; il tema scuro è un'antracite **fissa** ad alto
+  contrasto, indipendente dal sistema, per test deterministici. Un test sui sorgenti
+  verifica che nessun colore sia hardcoded fuori dalla palette.
+- **Aggiornamento in tempo reale**: `WndProc` riconosce `WM_SETTINGCHANGE` (area
+  `ImmersiveColorSet`) e `WM_THEMECHANGED`, rilegge il tema **una sola volta** per messaggio
+  e riapplica la palette solo quando il valore è effettivamente cambiato. Messaggi di altre
+  aree di sistema non innescano alcuna lettura.
+- **13 test `ThemeTests`**: mappatura del valore di tema, seam di lettura e fallback chiaro
+  (iniettato, mai dipendente dal tema reale del PC), palette chiara storica e scura fissa,
+  contrasto leggibile in entrambi i temi, applicazione/ripristino su `MainForm`, finestra
+  Informazioni, etichetta del report, messaggi di sistema via `WndProc`, centralizzazione
+  dei colori. La suite passa da **145** a **158**.
+
+### Aggiornato
+
+- Versione ufficiale del prodotto portata da `0.3.0` a `0.3.5`:
+  `AssemblyVersion`/`AssemblyFileVersion` `0.3.5.0`, `AssemblyInformationalVersion` `0.3.5`,
+  identità e descrizione del manifest, documentazione, test di versione e verifica.
+- Percorso del pacchetto portable: `artifacts/alpha-0.3.5/` (il pacchetto `alpha-0.3` del
+  0.3.0 resta conservato intatto).
+- Finestra Informazioni: la sezione Privacy dichiara che l'unica lettura di registro è
+  l'impostazione di tema Windows, senza scritture.
+- `PRIVACY.md`: la garanzia "nessuna lettura o scrittura del registro" è stata sostituita
+  dalla dichiarazione precisa (scritture zero; lettura sola del valore di tema) e la riga
+  dell'audit dell'eseguibile riporta la presenza della sola importazione `RegGetValue`.
+- Limite noto dichiarato in `README.md`: i controlli nativi di Windows (MessageBox,
+  ComboBox, barra del titolo) restano ai colori di sistema anche in tema scuro.
+
+### Limiti
+
+- Nessun selettore manuale del tema: l'unica sorgente è l'impostazione di Windows.
+- Il tema scuro non ridisegna i controlli nativi del sistema (vedi limite noto in
+  `README.md`); la copertura verificata è finestra, testi, tabella, pulsanti, menu,
+  dialogo Informazioni ed etichette.
+
 ## [0.3.0] — 2026-10-12
 
 Terza versione. Aggiunge la finestra Informazioni, il menu Impostazioni con la

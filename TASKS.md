@@ -1,4 +1,4 @@
-# TASKS — CleanSlate 0.3.0
+# TASKS — CleanSlate 0.3.5
 
 Checklist operativa. Ogni voce riporta lo **stato reale** verificato, non l'intenzione.
 
@@ -216,6 +216,35 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 
 ---
 
+## FASE 12 — Tema chiaro/scuro automatico (0.3.5, 2026-10-12)
+
+Allineamento dell'interfaccia alle preferenze di Windows, senza dipendenze, senza thread
+aggiuntivi e senza modifiche al motore di scansione/cancellazione.
+
+- [x] `AppTheme` (enum Light/Dark) e `WindowsTheme`: lettura sola lettura del valore
+      `AppsUseLightTheme` (`HKCU\...\Themes\Personalize`) via P/Invoke `RegGetValue`
+      (advapi32, nessuna API di registro gestita, nessuna assembly aggiuntiva); seam
+      `AppsUseLightThemeReader` per i test; errore/valore assente → tema chiaro
+- [x] `ThemePalette`: palette centralizzata; chiaro = colori di sistema identici a 0.3.0
+      (zero regressione), scuro = antracite fisso ad alto contrasto (deterministico in test)
+- [x] `MainForm.ApplyTheme`: unico punto di assegnazione cromatica (finestra, testi, tabella,
+      pulsanti, menu); dialogo Informazioni e etichetta report inclusi; nessun colore
+      hardcoded fuori dalla palette (verificato da test sui sorgenti)
+- [x] Aggiornamento live: `WndProc` riconosce `WM_SETTINGCHANGE` (area `ImmersiveColorSet`)
+      e `WM_THEMECHANGED`, rilegge una sola volta e riapplica solo se il tema è cambiato
+- [x] Limiti dichiarati in `README.md`: controlli nativi (MessageBox, ComboBox, barra del
+      titolo) restano ai colori di Windows; nessun selettore manuale (tema = sistema)
+- [x] 13 test `ThemeTests` (mappatura, seam, fallback, contrasto, applicazione/ripristino,
+      finestra Informazioni, report, messaggi di sistema, centralizzazione); la suite passa
+      da 145 a 158
+- [x] Bump versione 0.3.5 (AssemblyInfo, manifest, AppInfo, ReportBuilder, test di
+      versione, build.ps1, verify.ps1, qa-practical, docs) e pacchetto
+      `artifacts/alpha-0.3.5/` (prima era `alpha-0.3`, conservato intatto)
+- [x] Audit stringhe della build 0.3.5: `RegGetValue`/`advapi32` presenti (atteso),
+      `RegistryKey`/`Microsoft.Win32`/token di rete assenti; `http://` solo nel manifest
+
+---
+
 ## Criteri di completamento 0.1 Alpha
 
 | # | Criterio | Stato | Evidenza |
@@ -286,7 +315,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Verifica | Risultato |
 |---|---|
 | Compilazione Release x64 | `bin/Release/CleanSlate.exe` |
-| Suite di test | **145/145** su 2 esecuzioni consecutive (111 alla validazione pre-beta, 126 in 0.2.0, +19 `InfoSettingsTests` in 0.3.0) |
+| Suite di test | **153/158** (145 di 0.3.0 + 13 nuovi `ThemeTests`; 5 `RowContextMenuTests` bloccati dall'ambiente sessione bloccata → clipboard non disponibile, non difetti di prodotto) |
 | Residui del fixture di test dopo la suite | **0** |
 | Verifica end-to-end GUI (`tests/verify.ps1`) | **41/41** su `bin/Release` e di nuovo **41/41** sull'exe del pacchetto |
 | Finestra Informazioni e menu Impostazioni | **19 test** (`InfoSettingsTests`) + sezione `3b` di `verify.ps1`: apertura/chiusura della finestra Informazioni con lettura del contenuto, apertura del menu e chiusura con Esc |
@@ -297,7 +326,7 @@ come TMP del processo GUI, con **solo file sintetici** identificabili (prefisso
 | Connessioni TCP in uscita durante un'analisi reale | **0** / almeno 40 campionamenti per esecuzione |
 | Registro, servizi, attività, avvio automatico | Invariati |
 | Processo residente dopo la chiusura | Nessuno |
-| Pacchetto portable | `artifacts/alpha-0.3/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
+| Pacchetto portable | `artifacts/alpha-0.3.5/` (exe, README.txt, LICENSE.txt, SHA256SUMS.txt) |
 | Pacchetto == `bin/Release` | SHA-256 identici nella stessa sessione di build (build non riproducibile) |
 | Build pre-audit conservata | `artifacts/audit-baseline/` (SHA-256 `bf33e9cb…`) |
 | Documentazione | `README.md`, `SECURITY.md`, `PRIVACY.md`, `CHANGELOG.md` |

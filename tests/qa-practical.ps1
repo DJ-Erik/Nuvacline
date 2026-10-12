@@ -1,4 +1,4 @@
-# Validazione pratica pre-beta di CleanSlate 0.3.0.
+# Validazione pratica pre-beta di CleanSlate 0.3.5.
 #
 # Scopo: attraversare il percorso reale analisi -> selezione -> cancellazione usando
 # l'eseguibile verificato, SENZA eliminare dati preesistenti dell'utente.
@@ -381,7 +381,7 @@ function Wait-Dialog([uint32]$processId, [int]$timeoutMs) {
 # ================================================================== Fase 0 ====
 
 Write-Host ''
-Write-Host ('Validazione pratica pre-beta di CleanSlate 0.3.0  [id test: ' + $qaId + ']')
+Write-Host ('Validazione pratica pre-beta di CleanSlate 0.3.5  [id test: ' + $qaId + ']')
 Write-Host ('Vero %TEMP%: ' + $realTemp)
 Write-Host ''
 
