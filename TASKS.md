@@ -302,8 +302,47 @@ sempre 0 e mai letto.
 - **0.4.0 (minor)**: rimozione prudente delle **cartelle vuote** residue sotto la radice
   dopo la pulizia (stesse regole di sicurezza: solo dentro radice, mai reparse, mai la
   radice, cancellabile). Cambia il contratto "rimuove file" in "rimuove file e cartelle
-  vuote residue": richiede conferma esplicita.
-- Restano ambientali, in attesa di sessione sbloccata: 5 `RowContextMenuTests` clipboard.
+  vuote residue": richiede conferma esplicita. Specifica tecnica completa in
+  `SPEC-0.4.0.md` (**bozza, non implementata, in attesa di autorizzazione**).
+
+---
+
+## FASE 15 — Verifiche riproducibili e stato ambientale (2026-10-13)
+
+Sessione di riesecuzione non interattiva sul commit `c1d0c4f` (albero pulito).
+
+- [x] **Integrità release**: `artifacts/alpha-0.3.5` e `artifacts/alpha-0.3.6` intatti;
+      SHA-256 dei file coincidenti con quelli registrati al momento del rilascio e con i
+      rispettivi `SHA256SUMS.txt`; versioni FileVersion 0.3.5.0/0.3.6.0.
+- [x] **Coerenza con i commit**: `build.ps1` al commit `6e30184` genera `alpha-0.3.5`
+      (testi 0.3.5), al commit `c1d0c4f` genera `alpha-0.3.6` (testi 0.3.6); le release
+      completate non sono state modificate.
+- [x] **Suite di test**: **154/159** identica alla rilevazione precedente (stessi 5
+      fallimenti, stesso messaggio); `ThemeTests`, `ScannerTests` (incl. il nuovo test
+      cartelle esplorate), `ReportTests`, `InfoSettingsTests` 0.3.6 tutti verdi.
+- [x] **verify.ps1 0.3.6**: 41/41 sull'exe di `artifacts/alpha-0.3.6` (script corrente).
+- [x] **verify.ps1 0.3.5**: 41/41 eseguendo lo script nella versione del commit
+      `6e30184` (lo script corrente richiede la 0.3.6; il disallineamento è del tool,
+      non del pacchetto).
+- [x] **Audit stringhe exe** (entrambi i pacchetti): presenti solo `RegGetValue`/
+      `advapi32` (lettura del tema, atteso) e `ShellExecute` (memberref `UseShellExecute`
+      per apertura report/Esplora); assenti token di rete, API di registro gestite e
+      comandi di shell distruttivi.
+- [x] **Rete/registro in esecuzione**: 0 connessioni TCP in uscita (≈200 campionamenti
+      per verifica), registro di sistema invariato, nessuna chiave `HKCU\Software\CleanSlate`.
+- [ ] **Da verificare in sessione desktop sbloccata** (clipboard negata: `LockApp` +
+      `LogonUI` attivi; `OpenClipboard` → "Operazione richiesta sugli Appunti non
+      riuscita"). Non modificati, non saltati, **non dichiarati superati**:
+  1. `RowContextMenuTests.RowMenu_ActionStillWorksWithTheRealEventOrderClosedBeforeClick`
+  2. `RowContextMenuTests.RowMenu_ClipboardRoundTrip_KeepsUnicodeAndSpacesIntact`
+  3. `RowContextMenuTests.RowMenu_CopyFileName_CopiesOnlyTheFileNameWithoutPath`
+  4. `RowContextMenuTests.RowMenu_CopyFolderPath_CopiesContainingFolderWithoutFileName`
+  5. `RowContextMenuTests.RowMenu_MissingFile_ReportsClearMessageWithoutCrashOrProcess`
+
+  Procedura di chiusura: sbloccare la sessione, rieseguire
+  `powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1`, attendere 159/159.
+- [ ] **0.4.0**: in attesa di autorizzazione esplicita; nessuna implementazione avviata
+      (`SPEC-0.4.0.md` è documentazione di progetto, non codice).
 
 ---
 
