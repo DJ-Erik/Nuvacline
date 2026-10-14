@@ -30,11 +30,15 @@ namespace CleanSlate.Core
         public readonly bool NativeButtons;
         public readonly Color MenuBack;
         public readonly Color MenuText;
+        public readonly Color AccentSuccess;
+        public readonly Color AccentWarning;
+        public readonly Color AccentError;
 
         private ThemePalette(AppTheme theme, Color surface, Color text,
             Color textSecondary, Color textMuted, Color gridBack, Color gridText,
             Color gridHeaderBack, Color gridHeaderText, Color buttonBack,
-            Color buttonText, bool nativeButtons, Color menuBack, Color menuText)
+            Color buttonText, bool nativeButtons, Color menuBack, Color menuText,
+            Color accentSuccess, Color accentWarning, Color accentError)
         {
             Theme = theme;
             Surface = surface;
@@ -50,6 +54,9 @@ namespace CleanSlate.Core
             NativeButtons = nativeButtons;
             MenuBack = menuBack;
             MenuText = menuText;
+            AccentSuccess = accentSuccess;
+            AccentWarning = accentWarning;
+            AccentError = accentError;
         }
 
         /// <summary>Palette del tema richiesto: il tema scuro e' fisso, il chiaro di sistema.</summary>
@@ -80,7 +87,10 @@ namespace CleanSlate.Core
                 SystemColors.ControlText,
                 true,
                 SystemColors.Menu,
-                SystemColors.MenuText);
+                SystemColors.MenuText,
+                Color.FromArgb(0, 110, 0),
+                Color.FromArgb(160, 100, 0),
+                Color.FromArgb(170, 30, 30));
         }
 
         /// <summary>
@@ -102,7 +112,10 @@ namespace CleanSlate.Core
                 Color.FromArgb(236, 236, 240),
                 false,
                 Color.FromArgb(48, 48, 54),
-                Color.FromArgb(236, 236, 240));
+                Color.FromArgb(236, 236, 240),
+                Color.FromArgb(110, 210, 130),
+                Color.FromArgb(235, 185, 90),
+                Color.FromArgb(235, 110, 110));
         }
     }
 }

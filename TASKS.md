@@ -1,4 +1,4 @@
-# TASKS — CleanSlate 0.4.0
+# TASKS — CleanSlate 0.4.5
 
 Checklist operativa. Ogni voce riporta lo **stato reale** verificato, non l'intenzione.
 
@@ -391,6 +391,47 @@ solo `%TEMP%` validato, mai la radice, mai reparse, mai `Directory.Delete` ricor
 - [ ] Commit locale della release; **nessun push**.
 
 SHA-256 exe 0.4.0: `721cddfd2f34d93affdee8eda829941c1f834781e8c01532e9508a9446999cb0`
+
+---
+
+## FASE 17 — Riepilogo compatto e finestra dettagli (0.4.5, 2026-10-14)
+
+Miglioramento dell'esperienza post-pulizia: riepilogo essenziale nella finestra
+principale, dettagli completi in una finestra separata accessibile su richiesta.
+
+### Implementazione
+
+- [x] `UI/CleanupDetailsForm.cs` (nuovo): finestra modale `dlgCleanupDetails` con
+  TextBox sola lettura multilinea con barra di scorrimento (`WordWrap=false`), pulsante
+  «Chiudi» (AcceptButton/CancelButton), `FormBorderStyle.Sizable`, `MinimumSize` 460×300,
+  `ClientSize` 560×420, palette del tema, nessuna azione né rete.
+- [x] `CleanupDetailsForm.BuildDetailsText`: riepilogo completo (`BuildCleanSummaryText`,
+  testo invariato rispetto alla 0.4.0) seguito da **tutti** gli esiti dei file e delle
+  cartelle vuote (nome, esito, messaggio), senza troncamento a 6.
+- [x] `UI/MainForm.cs`: pulsante `_btnDetails` «Visualizza dettagli» (160×30, agganciato
+  in basso a sinistra, disabilitato prima di una pulizia); seam `_showDetailsDialog`;
+  `OnDetailsClick`/`ShowDetailsDialog`; `BuildCompactSummary` (metodo puro statico) per
+  l'etichetta del riepilogo; `ShowCleanSummary` aggiorna l'etichetta invece di mostrare
+  un MessageBox; `_lastEmptyClean` conservato anche quando la fase cartelle fallisce;
+  `BuildCleanSummaryText` ora `internal static`.
+- [x] `src/CleanSlate.Tests/CleanupDetailsTests.cs` (nuovo): **16 test** coprenti tutti
+  i punti dei requisiti (vedi CHANGELOG 0.4.5).
+- [x] 3 test `FullFlow` di `EmptyFolderCleanerTests` adattati: verificano l'etichetta
+  del riepilogo invece del MessageBox.
+
+### Verifiche
+
+- [x] Suite di test: **197/197** (181 precedenti + 16 nuovi); nessun test clipboard
+  modificato o saltato.
+- [x] PrivacyTests e SecurityAuditTests invariati e superati.
+- [x] `ThemeTests.AppSources_HardcodeNoColorsOutsideThePalette` superato (nessun colore
+  hardcoded nel nuovo file).
+- [x] Bump versione 0.4.5 (AssemblyInfo, manifest, AppInfo, ReportBuilder, build.ps1,
+      verify.ps1, qa-practical, InfoSettingsTests, docs).
+- [x] Verifica end-to-end `verify.ps1` sull'exe del pacchetto 0.4.5.
+- [x] Pacchetto `artifacts/alpha-0.4.5/` con SHA256SUMS; `alpha-0.3`, `alpha-0.3.5`,
+      `alpha-0.3.6`, `alpha-0.4.0` intatti.
+- [ ] Commit locale della release; **nessun push**.
 
 ---
 

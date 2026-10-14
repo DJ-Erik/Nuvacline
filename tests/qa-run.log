@@ -1,0 +1,266 @@
+﻿
+Validazione pratica pre-beta di CleanSlate 0.1 alpha  [id test: 036a9657]
+Vero %TEMP%: C:\Users\User\AppData\Local\Temp
+
+Fase 0) Precondizioni...
+  OK   Nessun privilegio amministrativo in uso
+  OK   Eseguibile verificato presente: C:\Users\User\Documents\Experiments\cleanslate\artifacts\alpha-0.1\CleanSlate.exe
+  OK   Eseguibile di bin presente: C:\Users\User\Documents\Experiments\cleanslate\bin\Release\CleanSlate.exe
+  OK   SHA-256 del pacchetto registrato: B9557640FC47DEE71499427660F989F701D876D29581913F434D438708107F07
+  NOTE Snapshot del vero %TEMP%: 3187 file preesistenti registrati
+
+Fase 1) A: analisi reale del %TEMP% dell'utente, senza cancellare nulla...
+  OK   La finestra principale della GUI e' stata creata
+  OK   Titolo della finestra: CleanSlate 0.1.0-alpha
+  OK   Etichetta di stato individuata
+  OK   Etichetta di riepilogo individuata
+  OK   Il pulsante "Analizza" e' raggiungibile
+  OK   Stato terminale della scansione reale: "Analisi completata."
+  OK   Riepilogo reale: File analizzati: 3187 ┬À Proposti: 3121 ┬À Scartati: 66 ┬À Errori di lettura: 0 ┬À Spazio recuperabile stimato: 102,9 MB
+  OK   L'analisi reale ha esaminato 3187 file della cartella temporanea dell'utente
+  OK   Report dell'analisi reale scritto: C:\Users\User\AppData\Local\CleanSlate\reports\cleanslate-20261010-163423.txt
+  OK   La finestra si e' chiusa senza residui dopo la sola analisi
+
+Fase 2) Fixture: file sintetici identificabili dentro il vero %TEMP%...
+  OK   Junction creata dentro il vero %TEMP%: C:\Users\User\AppData\Local\Temp\cleanslate-qa-036a9657\pathswap\sub -> C:\Users\User\AppData\Local\CleanSlateQaOutside-036a9657
+  OK   Il file "swapfile.txt" e' raggiungibile attraverso la junction
+  OK   File "locked.txt" del vero %TEMP% tenuto aperto con FileShare.None
+  OK   File "locked.txt" del sandbox tenuto aperto con FileShare.None
+  NOTE Fixture create: 8 file nel vero %TEMP%, 5 nel sandbox, 1 vittima esterna
+  NOTE Percorso vittima: C:\Users\User\AppData\Local\CleanSlateQaOutside-036a9657\swapfile.txt
+
+Fase 3) C: regole di eta' e anteprima sul codice di produzione...
+  OK   Lo scanner di produzione propone "old.txt" (file sufficientemente vecchio)
+  OK   Lo scanner di produzione propone "selected.txt"
+  OK   Lo scanner di produzione propone "unselected.txt"
+  OK   Lo scanner di produzione propone "locked.txt" (leggibile nonostante il blocco)
+  OK   Lo scanner di produzione propone "modified.txt"
+  OK   Lo scanner di produzione NON propone "recent.txt" (regola dei 24 ore)
+  OK   Lo scanner di produzione NON segue la junction e non propone "swapfile.txt"
+  NOTE Elementi della fixture nello scanner reale: locked.txt, modified.txt, old.txt, selected.txt, unselected.txt
+  NOTE Totale elementi proposti dallo scanner reale: 3126
+  OK   Seconda analisi reale completata: "Analisi completata."
+  OK   Delta "Proposti" della GUI reale >= +5 (i 5 fixture vecchi): 5
+  OK   Delta "Scartati" della GUI reale >= +1 (il file recente): 1
+  OK   Delta "File analizzati" della GUI reale >= +6: 6
+
+Fase 4) D/E: flusso GUI sul sandbox (analisi, conferma, annullamento)...
+  OK   Il file "non selezionato" del sandbox e' integro prima della pulizia
+  OK   Analisi sul sandbox completata: "Analisi completata."
+  OK   Il sandbox propone esattamente 4 file (recente escluso): 4
+  OK   Il sandbox scarta esattamente 1 file recente: 1
+  OK   Anteprima della tabella: 4 elementi in elenco
+  OK   Dopo l'analisi la pulizia e' abilitata
+  OK   La finestra di conferma appare dopo "Pulisci selezionati"
+  NOTE Finestra di conferma: Conferma pulizia | &S├¼ | &No | Eliminare 4 file per un totale stimato di 1000 B?
+
+I file eliminati non potranno essere ripristinati.
+
+Vuole continuare?
+  OK   La conferma mostra tutti e 4 i file proposti (selezione predefinita): 4
+  OK   La conferma mostra il totale atteso (1000 B): 1000
+  OK   Pulsante "No" della conferma individuato
+  OK   Dopo "No" la finestra di conferma e' chiusa
+  OK   Dopo "No" la pulizia non e' partita: stato "Analisi completata."
+  OK   Dopo "No": "old.txt" del sandbox ancora presente
+  OK   Dopo "No": "selected.txt" del sandbox ancora presente
+  OK   Dopo "No": "unselected.txt" del sandbox ancora presente
+  OK   Dopo "No": "locked.txt" del sandbox ancora presente
+  OK   Dopo "No": contenuto di "unselected.txt" invariato
+  NOTE Deselezione della riga non eseguita: la sessione e' bloccata e la griglia non accetta input sintetico. Il percorso selezione-cancellazione e' verificato al motore di produzione (Fase 5).
+  OK   Il processo GUI del sandbox e' terminato alla fine della Fase 4
+
+Fase 5) D/E/F: motore di produzione sul vero %TEMP%, con lista esplicita...
+  OK   La radice autorizzata dell'applicazione e' disponibile
+  OK   La radice autorizzata corrisponde al vero %TEMP%: C:\Users\User\AppData\Local\Temp
+  NOTE "modified.txt" toccato dopo la scansione (simula un file modificato dall'utente)
+  OK   Il motore di produzione ha completato l'operazione
+  OK   La radice usata dal motore e' il vero %TEMP%: C:\Users\User\AppData\Local\Temp
+  OK   Motore: "selected.txt" eliminato
+  OK   Motore: "modified.txt" saltato (modificato dopo la scansione)
+  OK   Motore: "locked.txt" fallito (file in uso), non eliminato
+  OK   Motore: "swapfile.txt" saltato (percorso sostituito da junction)
+  OK   Il motore dichiara 1 sola eliminazione: 1
+  OK   Il motore dichiara 1 solo errore: 1
+  OK   Motore: un file fuori dalla radice autorizzata viene rifiutato
+  OK   Motore: la vittima fuori radice e' ancora intatta
+  OK   Motore: la radice %TEMP% stessa viene rifiutata
+  OK   Motore: la cartella della fixture esiste ancora (nessuna cancellazione di directory)
+
+Fase 6) Verifica di integrita' di tutti i sopravvissuti...
+  OK   Vero %TEMP%: "selected.txt" e' stato eliminato
+  OK   Vero %TEMP%: "old.txt" sopravvissuto (non era selezionato)
+  OK   Vero %TEMP%: contenuto di "old.txt" invariato
+  OK   Vero %TEMP%: "unselected.txt" sopravvissuto (mai passato al motore)
+  OK   Vero %TEMP%: contenuto di "unselected.txt" invariato
+  OK   Vero %TEMP%: "modified.txt" sopravvissuto (saltato come recente)
+  OK   Vero %TEMP%: "locked.txt" sopravvissuto (file in uso)
+  OK   Vittima esterna: contenuto invariato dopo tutti i tentativi
+  OK   Vittima esterna: percorso e hash coerenti
+  OK   File dietro la junction: ancora leggibile
+
+Fase 7) G: rimozione dei soli residui creati dal test...
+  NOTE Lock sui file "locked.txt" rilasciati prima della verifica dei residui
+  OK   Prefisso del residuo nel vero %TEMP% verificato: C:\Users\User\AppData\Local\Temp\cleanslate-qa-036a9657
+  OK   Residui del vero %TEMP% con contenuto marcato verificati: 6
+  OK   Junction rimossa senza toccare la cartella esterna
+  OK   La cartella esterna esiste ancora dopo la rimozione della junction
+  OK   Residui del vero %TEMP% rimossi
+  OK   Cartella esterna rimossa
+  OK   Sandbox rimossa
+  OK   Nessun residuo "cleanslate-qa-*" nel vero %TEMP%
+  OK   Nessun file della fixture compare ancora nello snapshot finale del %TEMP%
+  NOTE Nessun file preesistenti del %TEMP% e' scomparso durante la finestra di prova
+  NOTE Snapshot %TEMP%: 3187 file all'inizio, 3187 alla fine
+
+Fase 8) H: suite automatica, verifica end-to-end e conservazione della build...
+  OK   La build pubblicata non e' stata modificata dalla validazione
+
+Compilazione applicazione (Release)...
+Compilazione test...
+
+Esecuzione della suite: C:\Users\User\Documents\Experiments\cleanslate\tests\bin\CleanSlate.Tests.exe
+
+CleanSlate - suite di test
+============================================================
+PASS  CleanerTests.Clean_CancellationIsCooperativeAndLeavesRemainingFiles
+PASS  CleanerTests.Clean_DirectoryPath_IsSkippedAndContentsSurvive
+PASS  CleanerTests.Clean_EligibleFiles_AreDeletedAndBytesCounted
+PASS  CleanerTests.Clean_EndToEnd_ScansThenDeletesOnlyScannedItems
+PASS  CleanerTests.Clean_FileDeletedBetweenScanAndClean_IsSkipped
+PASS  CleanerTests.Clean_FileNewerThanLimit_IsSkipped
+PASS  CleanerTests.Clean_InvalidPath_IsSkippedWithoutCrash
+PASS  CleanerTests.Clean_LockedFile_FailsGracefullyAndOthersSucceed
+PASS  CleanerTests.Clean_PathOutsideRoot_IsRejectedAndFileSurvives
+PASS  CleanerTests.Clean_PathThroughJunction_IsRejectedAndTargetSurvives
+PASS  CleanerTests.Clean_PathWithDotDotEscape_IsRejectedAndFileSurvives
+PASS  CleanerTests.Clean_ReadOnlyFile_FailsGracefullyAndOthersSucceed
+PASS  CleanerTests.Clean_ReportsOnlyBytesActuallyRemoved
+PASS  CleanerTests.Clean_RootPath_IsNeverDeleted
+PASS  PathSafetyTests.IsInsideRoot_DifferentCase_IsStillInside
+PASS  PathSafetyTests.IsInsideRoot_EmptyOrNull_ReturnsFalse
+PASS  PathSafetyTests.IsInsideRoot_FileInside_ReturnsTrue
+PASS  PathSafetyTests.IsInsideRoot_PrefixTrick_ReturnsFalse
+PASS  PathSafetyTests.IsInsideRoot_RootItself_ReturnsFalse
+PASS  PathSafetyTests.IsInsideRoot_SiblingDirectory_ReturnsFalse
+PASS  PathSafetyTests.IsInsideRoot_TraversalEscapingRoot_ReturnsFalse
+PASS  PathSafetyTests.IsInsideRoot_TraversalStayingInside_ReturnsTrue
+PASS  PathSafetyTests.Reparse_JunctionBelowRoot_IsDetected
+PASS  PathSafetyTests.Reparse_NoJunctionInsideRoot_ReturnsFalse
+PASS  PathSafetyTests.Reparse_OutsideRoot_IsTreatedAsUnsafe
+PASS  PathSafetyTests.ValidateCleaningRoot_DriveRoot_IsRejected
+PASS  PathSafetyTests.ValidateCleaningRoot_Empty_IsRejected
+PASS  PathSafetyTests.ValidateCleaningRoot_FixtureRoot_IsAccepted
+PASS  PathSafetyTests.ValidateCleaningRoot_NonexistentDirectory_IsRejected
+PASS  PathSafetyTests.ValidateCleaningRoot_UncPath_IsRejected
+PASS  PrivacyTests.AppAssembly_ReferencesNoNetworkAssembly
+PASS  PrivacyTests.AppAssembly_ReferencesOnlyFrameworkAssemblies
+PASS  PrivacyTests.AppDirectory_ContainsNoNetworkOrTelemetryConfigurationFiles
+PASS  PrivacyTests.Manifest_RequestsNoElevation
+PASS  PrivacyTests.SourceFiles_AreAllUnderTheApplicationFolder
+PASS  PrivacyTests.Sources_ContainNoAutoStartOrServicePersistence
+PASS  PrivacyTests.Sources_ContainNoDestructiveShellCommands
+PASS  PrivacyTests.Sources_ContainNoHardcodedUserProfilePaths
+PASS  PrivacyTests.Sources_ContainNoNetworkApiUsage
+PASS  PrivacyTests.Sources_ContainNoRegistryApiUsage
+PASS  PrivacyTests.Sources_ContainNoTelemetryOrAutoUpdate
+PASS  ReportTests.Report_Build_DoesNotCreateAnyFile
+PASS  ReportTests.Report_Build_ReflectsCancellationState
+PASS  ReportTests.Report_Build_WithNoData_ReportsNoOperation
+PASS  ReportTests.Report_ExportWithoutExplicitPath_Throws
+PASS  ReportTests.Report_Export_WritesExactlyOneFileAtRequestedPath
+PASS  ReportTests.Report_Json_IsValidShapeAndEscapesControlCharacters
+PASS  ReportTests.Report_SanitizesPathsAndDoesNotExposeUserProfile
+PASS  ReportTests.Report_Text_ContainsVersionCountersAndNotes
+PASS  ScannerTests.Scan_AccessDeniedDirectory_RecordsErrorAndContinues
+PASS  ScannerTests.Scan_CancellationBeforeStart_ReturnsCancelledImmediately
+PASS  ScannerTests.Scan_CancellationDuringScan_ReturnsPartialResults
+PASS  ScannerTests.Scan_DoesNotFollowDirectoryJunction
+PASS  ScannerTests.Scan_DoesNotModifyFixtureContents
+PASS  ScannerTests.Scan_EmptyDirectory_ReturnsZeroItems
+PASS  ScannerTests.Scan_ExactBoundary_IsExcluded
+PASS  ScannerTests.Scan_FileNewerThanLimit_IsExcluded
+PASS  ScannerTests.Scan_FileOlderThanLimit_IsIncluded
+PASS  ScannerTests.Scan_FilesWithKnownSizes_AreMeasuredExactly
+PASS  ScannerTests.Scan_LockedFile_IsStillScannedWithoutCrash
+PASS  ScannerTests.Scan_NestedDirectories_AreIncluded
+PASS  ScannerTests.Scan_NonexistentDirectory_ReturnsErrorWithoutCrash
+PASS  ScannerTests.Scan_ProgressCallbackReceivesRealCounters
+PASS  SecurityAuditTests.Clean_FileModifiedAfterScan_IsSkippedAndSurvives
+PASS  SecurityAuditTests.Clean_FileReplacedByDirectoryAfterScan_SkipsAndContentsSurvive
+PASS  SecurityAuditTests.Clean_OnlyItemsExplicitlyPassedToCleanerAreDeleted
+PASS  SecurityAuditTests.Clean_PathComponentReplacedByJunctionAfterScan_IsSkippedAndTargetSurvives
+PASS  SecurityAuditTests.PathSafety_AlternateDataStream_IsRejectedWithoutCrash
+PASS  SecurityAuditTests.PathSafety_PrefixedDeviceOrDosDevicePath_IsRejected
+PASS  SecurityAuditTests.PathSafety_TrailingSpaceOrDot_StillResolveInsideRoot
+PASS  SecurityAuditTests.Ui_CleanButtonIsDisabledWhenNothingIsSelected
+PASS  SecurityAuditTests.Ui_SelectionIsPreservedWhenTheListIsSorted
+PASS  SecurityAuditTests.Ui_UncheckedItemsAreNotPassedToCleanerAndSurvive
+============================================================
+Totale: 73  Superati: 73  Falliti: 0
+
+TEST: OK (tutti i test superati)
+  OK   Suite automatica: codice di uscita 0
+
+
+Verifica end-to-end di CleanSlate
+Eseguibile: C:\Users\User\Documents\Experiments\cleanslate\artifacts\alpha-0.1\CleanSlate.exe
+
+  OK   L'eseguibile esiste: C:\Users\User\Documents\Experiments\cleanslate\artifacts\alpha-0.1\CleanSlate.exe
+1) Preparazione e snapshot iniziali...
+2) Avvio della finestra...
+  OK   La finestra principale ├â┬¿ stata creata
+  OK   Titolo della finestra: CleanSlate 0.1.0-alpha
+  OK   Etichetta di stato individuata
+  OK   Etichetta di riepilogo individuata
+  OK   Etichetta del percorso del report individuata
+  OK   La tabella iniziale dichiara "Nessun elemento in elenco"
+  OK   Il pulsante "Pulisci selezionati" ├â┬¿ presente
+  OK   Prima dell'analisi la pulizia ├â┬¿ disabilitata (nessuna selezione)
+3) Pressione di "Analizza"...
+  OK   Il pulsante "Analizza" ├â┬¿ raggiungibile
+  OK   Lo stato terminale ├â┬¿ stato raggiunto: "Analisi completata."
+  OK   Riepilogo letto: File analizzati: 3187 ┬À Proposti: 3121 ┬À Scartati: 66 ┬À Errori di lettura: 0 ┬À Spazio recuperabile stimato: 102,9 MB
+  OK   La tabella dichiara il contenuto: 3121 elementi in elenco
+  OK   Gli elementi mostrati coincidono con quelli proposti (3121 vs 3121)
+  OK   Dopo l'analisi la pulizia ├â┬¿ abilitata (ci sono selezioni)
+  OK   Etichetta report: Report: C:\Users\User\AppData\Local\CleanSlate\reports\cleanslate-20261010-163438.txt
+  OK   Il file di report esiste sul disco
+  OK   Il report contiene l'intestazione attesa
+  OK   Il report non contiene il profilo utente
+  OK   Esattamente un nuovo report (prima: 45, dopo: 46)
+  OK   Il pulsante "Pulisci selezionati" ├â┬¿ presente
+  OK   Il pulsante "Apri report" ├â┬¿ presente
+4) Chiusura della finestra...
+  OK   Il processo si ├â┬¿ chiuso con la finestra
+  OK   Nessun processo CleanSlate residente dopo la chiusura
+5) Controlli su registro, servizi e attivita...
+  OK   Il registro di sistema ├â┬¿ invariato
+  OK   Elenco dei servizi invariato
+  OK   Elenco delle attivit├â┬á pianificate invariato
+  OK   Nessuna chiave di registro creata da CleanSlate
+  OK   Nessuna voce di avvio automatico creata
+  OK   Numero di campionamenti di rete sufficiente (103)
+  OK   Nessuna connessione TCP in uscita durante l'esecuzione (campionamenti: 103)
+
+VERIFICA: OK (tutti i controlli superati)
+  OK   Verifica end-to-end: codice di uscita 0
+  OK   SHA-256 finale del pacchetto invariato rispetto all'inizio
+
+NOTA: Snapshot del vero %TEMP%: 3187 file preesistenti registrati
+NOTA: Fixture create: 8 file nel vero %TEMP%, 5 nel sandbox, 1 vittima esterna
+NOTA: Percorso vittima: C:\Users\User\AppData\Local\CleanSlateQaOutside-036a9657\swapfile.txt
+NOTA: Elementi della fixture nello scanner reale: locked.txt, modified.txt, old.txt, selected.txt, unselected.txt
+NOTA: Totale elementi proposti dallo scanner reale: 3126
+NOTA: Finestra di conferma: Conferma pulizia | &S├¼ | &No | Eliminare 4 file per un totale stimato di 1000 B?
+
+I file eliminati non potranno essere ripristinati.
+
+Vuole continuare?
+NOTA: Deselezione della riga non eseguita: la sessione e' bloccata e la griglia non accetta input sintetico. Il percorso selezione-cancellazione e' verificato al motore di produzione (Fase 5).
+NOTA: "modified.txt" toccato dopo la scansione (simula un file modificato dall'utente)
+NOTA: Lock sui file "locked.txt" rilasciati prima della verifica dei residui
+NOTA: Nessun file preesistenti del %TEMP% e' scomparso durante la finestra di prova
+NOTA: Snapshot %TEMP%: 3187 file all'inizio, 3187 alla fine
+
+VALIDAZIONE PRATICA: OK (tutti i controlli superati)

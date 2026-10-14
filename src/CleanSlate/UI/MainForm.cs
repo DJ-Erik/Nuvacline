@@ -20,6 +20,13 @@ namespace CleanSlate.UI
     public sealed class MainForm : Form
     {
         private const int ProgressThrottleMs = 120;
+        private const int GridTopScan = 238;
+        private const int GridTopClean = 350;
+        private const int ReportTopScan = 216;
+        private const int ReportTopClean = 326;
+        private const int BottomReserved = 46;
+        private const int DetailsOpenHeight = 160;
+        private const int CleanResultsHeight = 160;
 
         private readonly TempFolderScanner _scanner = new TempFolderScanner();
         private readonly TempFileCleaner _cleaner = new TempFileCleaner();
@@ -34,6 +41,7 @@ namespace CleanSlate.UI
         private Button _btnDeselectAll;
         private Button _btnInfo;
         private Button _btnSettings;
+        private Button _btnDetails;
         private Label _lblSelection;
         private Label _statusLabel;
         private ProgressBar _progress;
@@ -43,7 +51,27 @@ namespace CleanSlate.UI
         private Label _footnoteLabel;
         private ComboBox _cboThreshold;
         private Label _lblThreshold;
+        private ComboBox _cboTheme;
+        private Label _lblTheme;
         private ToolTip _thresholdToolTip;
+
+        private Panel _cleanResultsPanel;
+        private Label _cleanStatusLabel;
+        private Label _spaceValueLabel;
+        private Label _spaceCaptionLabel;
+        private FlowLayoutPanel _statsFlow;
+        private Label _statDeletedCaption;
+        private Label _statDeletedValue;
+        private Label _statSkippedCaption;
+        private Label _statSkippedValue;
+        private Label _statErrorCaption;
+        private Label _statErrorValue;
+        private Panel _statFolderCell;
+        private Label _statFolderCaption;
+        private Label _statFolderValue;
+        private Panel _detailsPanel;
+        private TextBox _detailsTextBox;
+        private bool _detailsOpen;
 
         private CancellationTokenSource _cts;
         private bool _busy;
@@ -77,8 +105,11 @@ namespace CleanSlate.UI
         private Func<bool, bool> _saveKeepReports;
         private Func<bool> _loadRemoveEmptyFolders;
         private Func<bool, bool> _saveRemoveEmptyFolders;
+        private Func<ThemeChoice> _loadThemeChoice;
+        private Func<ThemeChoice, bool> _saveThemeChoice;
         private Func<string> _reportsFolder;
         private Action _showInfoDialog;
+        private Action _onDetailsToggle;
         private Func<AppTheme> _detectTheme;
         private Func<string, bool> _confirmClean;
         private Func<int, bool> _confirmRemoveEmptyFolders;
@@ -86,6 +117,8 @@ namespace CleanSlate.UI
         private Func<string, string, MessageBoxIcon, bool> _showMessage;
         private ThemePalette _palette = ThemePalette.For(AppTheme.Light);
         private AppTheme _currentTheme = AppTheme.Light;
+        private ThemeChoice _themeChoice = ScanSettings.DefaultThemeChoice;
+        private bool _loadingTheme;
 
         public MainForm()
         {
@@ -102,8 +135,11 @@ namespace CleanSlate.UI
             _saveKeepReports = delegate(bool keep) { return ScanSettings.SaveKeepReports(keep); };
             _loadRemoveEmptyFolders = delegate { return ScanSettings.LoadRemoveEmptyFolders(); };
             _saveRemoveEmptyFolders = delegate(bool remove) { return ScanSettings.SaveRemoveEmptyFolders(remove); };
+            _loadThemeChoice = delegate { return ScanSettings.LoadThemeChoice(); };
+            _saveThemeChoice = delegate(ThemeChoice choice) { return ScanSettings.SaveThemeChoice(choice); };
             _reportsFolder = delegate { return ReportsFolderDefault(); };
             _showInfoDialog = delegate { ShowInfoDialog(); };
+            _onDetailsToggle = delegate { ToggleDetailsPanel(); };
             _detectTheme = delegate { return WindowsTheme.Detect(); };
             _getAuthorizedRoot = delegate { return TempPathProvider.GetAuthorizedRoot(); };
             // I dialoghi di conferma restano reali (default identico alla 0.3.6):
@@ -123,6 +159,7 @@ namespace CleanSlate.UI
                 MessageBox.Show(this, messageText, title, MessageBoxButtons.OK, icon);
                 return true;
             };
+            LoadThemeChoiceSetting();
             ApplyTheme();
             LoadThresholdSetting();
             LoadKeepReportsSetting();
@@ -141,7 +178,7 @@ namespace CleanSlate.UI
             Text = "CleanSlate " + AppInfo.VersionText;
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(940, 620);
-            MinimumSize = new Size(800, 480);
+            MinimumSize = new Size(800, 600);
             Font = SystemFonts.MessageBoxFont;
             KeyPreview = false;
 
@@ -183,6 +220,32 @@ namespace CleanSlate.UI
             // e restano agganciati al bordo destro durante il ridimensionamento.
             _btnInfo = CreateIconButton("btnInfo", "?", 864, 10, OnInfoClick);
             _btnSettings = CreateIconButton("btnSettings", "⚙", 898, 10, OnSettingsClick);
+
+            // Selettore del tema: segue Windows in automatico oppure forza il
+            // chiaro/scuro dell'applicazione. La preferenza e' persistita in
+            // ScanSettings e viene caricata nel costruttore prima del primo
+            // ApplyTheme, cosi' l'avvio rispetta gia' la scelta dell'utente.
+            _lblTheme = new Label();
+            _lblTheme.Name = "lblTheme";
+            _lblTheme.AutoSize = false;
+            _lblTheme.Location = new Point(620, 12);
+            _lblTheme.Size = new Size(44, 18);
+            _lblTheme.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _lblTheme.TextAlign = ContentAlignment.MiddleLeft;
+            _lblTheme.Text = "Tema:";
+            Controls.Add(_lblTheme);
+
+            _cboTheme = new ComboBox();
+            _cboTheme.Name = "cboTheme";
+            _cboTheme.DropDownStyle = ComboBoxStyle.DropDownList;
+            _cboTheme.Location = new Point(668, 8);
+            _cboTheme.Size = new Size(140, 24);
+            _cboTheme.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _cboTheme.Items.Add("Automatico");
+            _cboTheme.Items.Add("Chiaro");
+            _cboTheme.Items.Add("Scuro");
+            _cboTheme.SelectedIndex = 0;
+            Controls.Add(_cboTheme);
 
             _btnAnalyze = CreateButton("btnAnalyze", "Analizza", 14, 78, 110, OnAnalyzeClick);
             _btnClean = CreateButton("btnClean", "PULISCI SELEZIONATI", 132, 78, 160, OnCleanClick);
@@ -243,7 +306,12 @@ namespace CleanSlate.UI
                 + "Modificare l'impostazione non avvia alcuna operazione: il nuovo valore "
                 + "entra in vigore alla prossima analisi. \"Nessuna soglia temporale\" "
                 + "include anche i file appena creati.");
+            _thresholdToolTip.SetToolTip(_cboTheme,
+                "Tema dell'interfaccia: Automatico segue le impostazioni di Windows "
+                + "aggiornandosi in tempo reale, Chiaro e Scuro forzano il tema "
+                + "dell'applicazione e restano salvati.");
             _cboThreshold.SelectedIndexChanged += OnThresholdChanged;
+            _cboTheme.SelectedIndexChanged += OnThemeChanged;
 
             // L'ingranaggio usa un carattere tipografico dedicato quando disponibile;
             // il fallback del sistema non deve impedire la creazione della finestra.
@@ -275,10 +343,12 @@ namespace CleanSlate.UI
             _summaryLabel.Text = "Nessuna analisi eseguita.";
             Controls.Add(_summaryLabel);
 
+            BuildCleanResultsPanel();
+
             _reportLabel = new Label();
             _reportLabel.Name = "lblReportPath";
             _reportLabel.AutoSize = false;
-            _reportLabel.Location = new Point(14, 216);
+            _reportLabel.Location = new Point(14, ReportTopScan);
             _reportLabel.Size = new Size(ClientSize.Width - 28, 16);
             _reportLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _reportLabel.AutoEllipsis = true;
@@ -289,9 +359,9 @@ namespace CleanSlate.UI
             _grid.Name = "gridResults";
             _grid.AccessibleName = "Nessun elemento in elenco";
             _grid.Text = "Nessun elemento in elenco";
-            _grid.Location = new Point(14, 238);
-            _grid.Size = new Size(ClientSize.Width - 28, ClientSize.Height - 238 - 46);
-            _grid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            _grid.Location = new Point(14, GridTopScan);
+            _grid.Size = new Size(ClientSize.Width - 28, ClientSize.Height - GridTopScan - BottomReserved);
+            _grid.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             _grid.ReadOnly = false;
             _grid.AllowUserToAddRows = false;
             _grid.AllowUserToDeleteRows = false;
@@ -312,6 +382,8 @@ namespace CleanSlate.UI
             BuildRowContextMenu();
             Controls.Add(_grid);
 
+            BuildDetailsPanel();
+
             _footnoteLabel = new Label();
             _footnoteLabel.Name = "lblFootnote";
             _footnoteLabel.AutoSize = false;
@@ -321,6 +393,174 @@ namespace CleanSlate.UI
             _footnoteLabel.Text = "Prima della pulizia puoi deselezionare qualsiasi file. "
                 + "La cancellazione richiede una conferma e i file eliminati non sono recuperabili.";
             Controls.Add(_footnoteLabel);
+        }
+
+        /// <summary>
+        /// Costruisce il riquadro dei risultati della pulizia: stato sintetico,
+        /// spazio recuperato in evidenza, statistiche secondarie separate e il
+        /// pulsante «Mostra dettagli» in basso a sinistra. Il riquadro resta
+        /// nascosto finché non viene eseguita almeno una pulizia.
+        /// </summary>
+        private void BuildCleanResultsPanel()
+        {
+            _cleanResultsPanel = new Panel();
+            _cleanResultsPanel.Name = "pnlCleanResults";
+            _cleanResultsPanel.Location = new Point(14, 162);
+            _cleanResultsPanel.Size = new Size(ClientSize.Width - 28, CleanResultsHeight);
+            _cleanResultsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _cleanResultsPanel.Visible = false;
+            Controls.Add(_cleanResultsPanel);
+
+            _cleanStatusLabel = new Label();
+            _cleanStatusLabel.Name = "lblCleanStatus";
+            _cleanStatusLabel.AutoSize = false;
+            _cleanStatusLabel.Location = new Point(8, 6);
+            _cleanStatusLabel.Size = new Size(_cleanResultsPanel.Width - 16, 22);
+            _cleanStatusLabel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _cleanStatusLabel.Font = new Font(Font.FontFamily, 10f, FontStyle.Bold);
+            _cleanStatusLabel.Text = string.Empty;
+            _cleanResultsPanel.Controls.Add(_cleanStatusLabel);
+
+            _spaceValueLabel = new Label();
+            _spaceValueLabel.Name = "lblSpaceValue";
+            _spaceValueLabel.AutoSize = false;
+            _spaceValueLabel.Location = new Point(8, 30);
+            _spaceValueLabel.Size = new Size(260, 36);
+            _spaceValueLabel.Font = new Font(Font.FontFamily, 20f, FontStyle.Bold);
+            _spaceValueLabel.Text = string.Empty;
+            _cleanResultsPanel.Controls.Add(_spaceValueLabel);
+
+            _spaceCaptionLabel = new Label();
+            _spaceCaptionLabel.Name = "lblSpaceCaption";
+            _spaceCaptionLabel.AutoSize = false;
+            _spaceCaptionLabel.Location = new Point(8, 66);
+            _spaceCaptionLabel.Size = new Size(260, 16);
+            _spaceCaptionLabel.Text = "Spazio recuperato";
+            _cleanResultsPanel.Controls.Add(_spaceCaptionLabel);
+
+            _statsFlow = new FlowLayoutPanel();
+            _statsFlow.Name = "flowStats";
+            _statsFlow.FlowDirection = FlowDirection.LeftToRight;
+            _statsFlow.WrapContents = false;
+            _statsFlow.AutoSize = false;
+            _statsFlow.Location = new Point(8, 84);
+            _statsFlow.Size = new Size(_cleanResultsPanel.Width - 16, 36);
+            _statsFlow.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _statsFlow.Padding = new Padding(0);
+            _cleanResultsPanel.Controls.Add(_statsFlow);
+
+            _statDeletedCaption = new Label();
+            _statDeletedCaption.Name = "lblStatDeletedCaption";
+            _statDeletedCaption.Text = "File eliminati";
+            _statDeletedValue = new Label();
+            _statDeletedValue.Name = "lblStatDeletedValue";
+            _statsFlow.Controls.Add(CreateStatCell("pnlStatDeleted",
+                _statDeletedCaption, _statDeletedValue, 110));
+
+            _statSkippedCaption = new Label();
+            _statSkippedCaption.Name = "lblStatSkippedCaption";
+            _statSkippedCaption.Text = "Elementi saltati";
+            _statSkippedValue = new Label();
+            _statSkippedValue.Name = "lblStatSkippedValue";
+            _statsFlow.Controls.Add(CreateStatCell("pnlStatSkipped",
+                _statSkippedCaption, _statSkippedValue, 110));
+
+            _statErrorCaption = new Label();
+            _statErrorCaption.Name = "lblStatErrorCaption";
+            _statErrorCaption.Text = "Errori";
+            _statErrorValue = new Label();
+            _statErrorValue.Name = "lblStatErrorValue";
+            _statsFlow.Controls.Add(CreateStatCell("pnlStatError",
+                _statErrorCaption, _statErrorValue, 90));
+
+            _statFolderCaption = new Label();
+            _statFolderCaption.Name = "lblStatFolderCaption";
+            _statFolderCaption.Text = "Cartelle vuote";
+            _statFolderValue = new Label();
+            _statFolderValue.Name = "lblStatFolderValue";
+            _statFolderCell = CreateStatCell("pnlStatFolder",
+                _statFolderCaption, _statFolderValue, 120);
+            _statFolderCell.Visible = false;
+            _statsFlow.Controls.Add(_statFolderCell);
+
+            // Riga separata sotto le statistiche, con margine inferiore di 6 px
+            // dal bordo del riquadro: prima finiva esattamente sul bordo
+            // (bordo del pulsante tagliato) e si sovrapponeva ai contatori.
+            _btnDetails = CreateButton("btnDetails", "Mostra dettagli", 8, 124, 140, OnDetailsClick);
+            _btnDetails.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            _btnDetails.Enabled = false;
+            _cleanResultsPanel.Controls.Add(_btnDetails);
+        }
+
+        /// <summary>
+        /// Crea una cella statistica compatta: didascalia sopra, valore sotto.
+        /// </summary>
+        private static Panel CreateStatCell(string name, Label caption, Label value, int width)
+        {
+            Panel cell = new Panel();
+            cell.Name = name;
+            cell.Size = new Size(width, 36);
+            cell.Margin = new Padding(0, 0, 12, 0);
+
+            caption.AutoSize = false;
+            caption.Location = new Point(0, 0);
+            caption.Size = new Size(width, 14);
+            cell.Controls.Add(caption);
+
+            value.AutoSize = false;
+            value.Location = new Point(0, 16);
+            value.Size = new Size(width, 18);
+            value.Font = new Font(caption.Font.FontFamily, 10f, FontStyle.Bold);
+            cell.Controls.Add(value);
+            return cell;
+        }
+
+        /// <summary>
+        /// Costruisce il pannello espandibile dei dettagli: TextBox sola
+        /// lettura con barra di scorrimento, richiudibile, senza nuove
+        /// scansioni né pulizie.
+        /// </summary>
+        private void BuildDetailsPanel()
+        {
+            _detailsPanel = new Panel();
+            _detailsPanel.Name = "pnlDetails";
+            _detailsPanel.Location = new Point(14, GridTopClean + 4);
+            _detailsPanel.Size = new Size(ClientSize.Width - 28, DetailsOpenHeight);
+            _detailsPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            _detailsPanel.Visible = false;
+            _detailsPanel.Padding = new Padding(0);
+            Controls.Add(_detailsPanel);
+
+            _detailsTextBox = new TextBox();
+            _detailsTextBox.Name = "txtDetails";
+            _detailsTextBox.Multiline = true;
+            _detailsTextBox.ReadOnly = true;
+            _detailsTextBox.ScrollBars = ScrollBars.Both;
+            _detailsTextBox.WordWrap = false;
+            _detailsTextBox.Location = new Point(0, 0);
+            _detailsTextBox.Size = new Size(_detailsPanel.Width, _detailsPanel.Height);
+            _detailsTextBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom
+                | AnchorStyles.Left | AnchorStyles.Right;
+            _detailsPanel.Controls.Add(_detailsTextBox);
+        }
+
+        /// <summary>
+        /// Mantiene la griglia e il pannello dettagli allineati durante il
+        /// ridimensionamento: la griglia si estende fino al pannello (quando
+        /// aperto) o fino alla riga delle note a piè di pagina.
+        /// </summary>
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (_grid == null || _cleanResultsPanel == null) return;
+
+            bool cleanVisible = _cleanResultsPanel.Visible;
+            int gridTop = cleanVisible ? GridTopClean : GridTopScan;
+            bool detailsOpen = _detailsOpen;
+            int bottom = ClientSize.Height - BottomReserved
+                - (detailsOpen ? DetailsOpenHeight + 4 : 0);
+            _grid.Height = Math.Max(40, bottom - gridTop);
+            if (detailsOpen) _detailsPanel.Top = gridTop + _grid.Height + 2;
         }
 
         private Button CreateButton(string name, string text, int x, int y, int width, EventHandler onClick)
@@ -455,18 +695,38 @@ namespace CleanSlate.UI
         {
             if (_lastClean != null)
             {
-                _summaryLabel.Text = string.Format(
-                    "File eliminati: {0} · Spazio effettivamente liberato: {1} · Saltati: {2} · Errori: {3} · Spazio stimato non recuperato: {4}",
-                    _lastClean.DeletedCount,
-                    ByteFormatter.Format(_lastClean.DeletedBytes),
-                    _lastClean.SkippedCount,
-                    _lastClean.ErrorCount,
-                    ByteFormatter.Format(_lastClean.EstimatedNotRecovered));
+                UpdateCleanResults();
                 return;
             }
 
+            ShowScanSummary();
+        }
+
+        /// <summary>
+        /// Mostra il riepilogo della scansione nella normale etichetta di testo
+        /// e nasconde il riquadro dei risultati della pulizia.
+        /// </summary>
+        private void ShowScanSummary()
+        {
+            if (_cleanResultsPanel != null) _cleanResultsPanel.Visible = false;
+            _detailsOpen = false;
+            if (_detailsPanel != null) _detailsPanel.Visible = false;
+            if (_btnDetails != null)
+            {
+                _btnDetails.Enabled = false;
+                _btnDetails.Text = "Mostra dettagli";
+            }
+            if (_grid != null)
+            {
+                _grid.Top = GridTopScan;
+                _grid.Height = Math.Max(40,
+                    ClientSize.Height - GridTopScan - BottomReserved);
+            }
+            if (_reportLabel != null) _reportLabel.Top = ReportTopScan;
+
             if (_lastScan != null && _lastScan.Success)
             {
+                _summaryLabel.Visible = true;
                 int selected = CountSelected();
                 string errorText;
                 if (_lastScan.Errors > 0)
@@ -492,7 +752,92 @@ namespace CleanSlate.UI
                 return;
             }
 
+            _summaryLabel.Visible = true;
             _summaryLabel.Text = "Nessuna analisi eseguita. Soglia temporale: " + FormatThreshold(CurrentThreshold.Value) + ".";
+        }
+
+        /// <summary>
+        /// Aggiorna il riquadro dei risultati della pulizia con lo stato reale
+        /// dell'ultima operazione. Il riquadro sostituisce l'etichetta del
+        /// riepilogo della scansione e resta visibile fino alla prossima analisi.
+        /// </summary>
+        private void UpdateCleanResults()
+        {
+            if (_lastClean == null)
+            {
+                ShowScanSummary();
+                return;
+            }
+
+            _summaryLabel.Visible = false;
+            _cleanResultsPanel.Visible = true;
+            _btnDetails.Enabled = !_busy;
+            _btnDetails.Text = _detailsOpen
+                ? "Nascondi dettagli"
+                : "Mostra dettagli";
+
+            string status = BuildCleanStatusText(_lastClean, _lastEmptyClean);
+            _cleanStatusLabel.Text = status;
+            _cleanStatusLabel.ForeColor = ResolveStatusColor(_lastClean, _lastEmptyClean);
+
+            _spaceValueLabel.Text = ByteFormatter.Format(_lastClean.DeletedBytes);
+            _spaceValueLabel.ForeColor = _palette.Text;
+
+            _spaceCaptionLabel.Text = "Spazio recuperato";
+            _spaceCaptionLabel.ForeColor = _palette.TextSecondary;
+
+            _statDeletedValue.Text = _lastClean.DeletedCount.ToString(CultureInfo.InvariantCulture);
+            _statSkippedValue.Text = _lastClean.SkippedCount.ToString(CultureInfo.InvariantCulture);
+            _statErrorValue.Text = _lastClean.ErrorCount.ToString(CultureInfo.InvariantCulture);
+
+            bool folderPhaseRan = _lastEmptyClean != null && _lastEmptyClean.Success;
+            _statFolderCell.Visible = folderPhaseRan;
+            if (folderPhaseRan)
+                _statFolderValue.Text = _lastEmptyClean.RemovedCount.ToString(CultureInfo.InvariantCulture);
+
+            if (_detailsOpen)
+                _detailsTextBox.Text = CleanupDetailsForm.BuildDetailsText(_lastClean, _lastEmptyClean);
+
+            // Fascia visibile tra il riquadro risultati e la griglia, come in
+            // modalità analisi: l'etichetta del report non deve mai stare
+            // dietro la griglia opaca.
+            _reportLabel.Top = ReportTopClean;
+            _grid.Top = GridTopClean;
+            _grid.Height = Math.Max(40,
+                ClientSize.Height - GridTopClean - BottomReserved
+                - (_detailsOpen ? DetailsOpenHeight + 4 : 0));
+            if (_detailsOpen)
+                _detailsPanel.Top = GridTopClean + _grid.Height + 2;
+        }
+
+        /// <summary>
+        /// Stato sintetico della pulizia. Non dichiara un successo completo
+        /// quando ci sono errori o quando l'operazione non è terminata.
+        /// </summary>
+        internal static string BuildCleanStatusText(CleanResult result, EmptyCleanResult emptyFolders)
+        {
+            if (result == null) return string.Empty;
+            if (result.Cancelled) return "Pulizia annullata.";
+            if (!result.Success) return "Pulizia non completata.";
+
+            bool folderWarning = emptyFolders != null
+                && (!emptyFolders.Success || emptyFolders.ErrorCount > 0);
+            if (result.ErrorCount > 0 || folderWarning)
+                return "Pulizia completata con avvisi.";
+            return "Pulizia completata.";
+        }
+
+        /// <summary>
+        /// Colore dello stato secondo il tema: successo, avviso o errore.
+        /// </summary>
+        private Color ResolveStatusColor(CleanResult result, EmptyCleanResult emptyFolders)
+        {
+            if (result == null) return _palette.Text;
+            if (result.Cancelled || !result.Success) return _palette.AccentWarning;
+            bool folderWarning = emptyFolders != null
+                && (!emptyFolders.Success || emptyFolders.ErrorCount > 0);
+            if (result.ErrorCount > 0 || folderWarning) return _palette.AccentWarning;
+            return _palette.AccentSuccess;
         }
 
         private static void ShowMessage(string text, string title, MessageBoxIcon icon)
@@ -772,7 +1117,12 @@ namespace CleanSlate.UI
                 // nessuna cartella viene toccata e il report resta quello della 0.3.6.
                 _lastEmptyClean = null;
                 if (!result.Cancelled && _removeEmptyFolders)
-                    _lastEmptyClean = await RunEmptyFolderPhaseAsync(cts.Token);
+                {
+                    EmptyCleanResult folders = await RunEmptyFolderPhaseAsync(cts.Token);
+                    // Conserva il risultato anche se non riuscito: il riepilogo
+                    // compatto deve poter mostrare l'errore della fase cartelle.
+                    if (folders != null) _lastEmptyClean = folders;
+                }
 
                 bool folderCancelled = _lastEmptyClean != null && _lastEmptyClean.Cancelled;
                 if (result.Cancelled || folderCancelled)
@@ -891,9 +1241,14 @@ namespace CleanSlate.UI
             if (!_busy) return;
             if (progress.Total > 0)
             {
-                int value = (int)((long)progress.Processed * 100L / progress.Total);
-                if (value < 0) value = 0;
-                if (value > 100) value = 100;
+                // La barra è configurata su conteggio elementi (Maximum = numero
+                // di selezionati): si assegna Processed limitato ai bounds reali
+                // del controllo. Assegnare una percentuale 0-100 con meno di 100
+                // file selezionati supererebbe Maximum e lancierebbe
+                // ArgumentOutOfRangeException sul thread UI.
+                int value = progress.Processed;
+                if (value < _progress.Minimum) value = _progress.Minimum;
+                if (value > _progress.Maximum) value = _progress.Maximum;
                 _progress.Value = value;
             }
             SetStatus(string.Format("Pulizia in corso... {0}/{1} · eliminati: {2}",
@@ -930,8 +1285,10 @@ namespace CleanSlate.UI
 
         private void ShowCleanSummary(CleanResult result)
         {
-            ShowMessageOwner(BuildCleanSummaryText(result, _lastEmptyClean),
-                "CleanSlate", MessageBoxIcon.Information);
+            // Il riquadro dei risultati resta nella finestra principale; i
+            // dettagli completi si aprono solo su richiesta tramite il
+            // pannello integrato «Mostra dettagli».
+            UpdateCleanResults();
         }
 
         /// <summary>
@@ -939,7 +1296,7 @@ namespace CleanSlate.UI
         /// quando la fase è stata eseguita. Metodo puro: con <paramref name="emptyFolders"/>
         /// null il testo è identico alla 0.3.6.
         /// </summary>
-        private static string BuildCleanSummaryText(CleanResult result, EmptyCleanResult emptyFolders)
+        internal static string BuildCleanSummaryText(CleanResult result, EmptyCleanResult emptyFolders)
         {
             string header = result.Cancelled
                 ? "Pulizia annullata prima del termine."
@@ -1053,6 +1410,52 @@ namespace CleanSlate.UI
             }
 
             OpenReportFile(_lastReportPath);
+        }
+
+        /// <summary>
+        /// Apre o richiude il pannello integrato dei dettagli dell'ultima
+        /// pulizia. Non esegue mai nuove scansioni né pulizie: mostra solo i
+        /// dati già prodotti.
+        /// </summary>
+        private void OnDetailsClick(object sender, EventArgs e)
+        {
+            if (_busy) return;
+            if (_lastClean == null) return;
+            if (_onDetailsToggle != null) _onDetailsToggle();
+            else ToggleDetailsPanel();
+        }
+
+        /// <summary>
+        /// Commuta la visibilità del pannello dettagli integrato. Il testo
+        /// completo degli esiti viene calcolato al momento dell'apertura e non
+        /// viene mai modificato dalla chiusura.
+        /// </summary>
+        private void ToggleDetailsPanel()
+        {
+            if (_lastClean == null || _detailsPanel == null) return;
+
+            // Stato di logica nel campo booleano: il getter di Visible risale la
+            // catena dei genitori e sarebbe sempre falso su una finestra non
+            // ancora mostrata. Visible resta solo la proprietà di rendering.
+            bool opening = !_detailsOpen;
+            _detailsOpen = opening;
+            _detailsPanel.Visible = opening;
+            _btnDetails.Text = opening ? "Nascondi dettagli" : "Mostra dettagli";
+
+            if (opening)
+            {
+                _detailsTextBox.Text = CleanupDetailsForm.BuildDetailsText(
+                    _lastClean, _lastEmptyClean);
+                _detailsPanel.Height = DetailsOpenHeight;
+            }
+
+            // La griglia si riallinea sotto il pannello quando aperto e
+            // torna a piena altezza quando chiuso. I risultati restano intatti.
+            _grid.Height = Math.Max(40,
+                ClientSize.Height - GridTopClean - BottomReserved
+                - (opening ? DetailsOpenHeight + 4 : 0));
+            if (opening)
+                _detailsPanel.Top = GridTopClean + _grid.Height + 2;
         }
 
         /// <summary>
@@ -1208,6 +1611,76 @@ namespace CleanSlate.UI
 
             _removeEmptyFolders = remove;
             if (_miRemoveEmptyFolders != null) _miRemoveEmptyFolders.Checked = remove;
+        }
+
+        /// <summary>
+        /// Carica la preferenza del tema tramite il seam dedicato, così i test
+        /// non toccano mai il file reale dell'utente. Qualsiasi errore o valore
+        /// fuori dall'enum ricade sul predefinito: tema automatico. Il valore
+        /// caricato viene applicato subito dopo con ApplyTheme(), mentre la
+        /// selezione della combo e' protetta dal flag _loadingTheme per non
+        /// riscrivere la stessa preferenza durante l'avvio.
+        /// </summary>
+        private void LoadThemeChoiceSetting()
+        {
+            ThemeChoice choice = ScanSettings.DefaultThemeChoice;
+            try
+            {
+                if (_loadThemeChoice != null) choice = _loadThemeChoice();
+            }
+            catch (Exception)
+            {
+                choice = ScanSettings.DefaultThemeChoice;
+            }
+
+            if (choice != ThemeChoice.Automatic
+                && choice != ThemeChoice.Light
+                && choice != ThemeChoice.Dark)
+            {
+                choice = ScanSettings.DefaultThemeChoice;
+            }
+
+            _themeChoice = choice;
+            _loadingTheme = true;
+            try
+            {
+                if (_cboTheme != null)
+                {
+                    int index = (int)choice;
+                    if (index < 0 || index >= _cboTheme.Items.Count) index = 0;
+                    _cboTheme.SelectedIndex = index;
+                }
+            }
+            finally
+            {
+                _loadingTheme = false;
+            }
+        }
+
+        /// <summary>
+        /// Applica e persiste la scelta del tema. La modifica non avvia analisi
+        /// né pulizia; se il salvataggio fallisce il tema resta comunque
+        /// applicato alla sessione corrente e alla prossima apertura varrà
+        /// l'ultima preferenza salvata.
+        /// </summary>
+        private void OnThemeChanged(object sender, EventArgs e)
+        {
+            if (_loadingTheme) return;
+
+            int index = _cboTheme.SelectedIndex;
+            if (index < 0 || index >= _cboTheme.Items.Count) return;
+
+            _themeChoice = (ThemeChoice)index;
+            try
+            {
+                if (_saveThemeChoice != null) _saveThemeChoice(_themeChoice);
+            }
+            catch (Exception)
+            {
+                // Nessun errore a schermo: il tema resta applicato in sessione.
+            }
+
+            ApplyTheme();
         }
 
         private void OnInfoClick(object sender, EventArgs e)
@@ -1475,19 +1948,23 @@ namespace CleanSlate.UI
         private const int WmThemeChanged = 0x031A;
 
         /// <summary>
-        /// Applica al tema corrente (rilevato dal seam _detectTheme) tutti i
-        /// controlli della finestra. Questa e' l'unica sede di assegnazione
-        /// cromatica dell'applicazione: ogni valore proviene centralmente da
-        /// ThemePalette, dove il tema chiaro riproduce i colori di sistema e il
-        /// tema scuro la palette antracite fissa. Un tema non riconosciuto o un
-        /// errore di lettura cadono sempre sul chiaro.
+        /// Applica al tema scelto dall'utente tutti i controlli della finestra.
+        /// La preferenza "Automatico" segue il rilevamento del seam _detectTheme;
+        /// "Chiaro" e "Scuro" forzano il tema indipendentemente da Windows.
+        /// Questa e' l'unica sede di assegnazione cromatica dell'applicazione:
+        /// ogni valore proviene centralmente da ThemePalette, dove il tema chiaro
+        /// riproduce i colori di sistema e il tema scuro la palette antracite
+        /// fissa. Un tema non riconosciuto o un errore di lettura cadono sempre
+        /// sul chiaro.
         /// </summary>
         private void ApplyTheme()
         {
             AppTheme theme = AppTheme.Light;
             try
             {
-                if (_detectTheme != null) theme = _detectTheme();
+                if (_themeChoice == ThemeChoice.Dark) theme = AppTheme.Dark;
+                else if (_themeChoice == ThemeChoice.Light) theme = AppTheme.Light;
+                else if (_detectTheme != null) theme = _detectTheme();
             }
             catch (Exception)
             {
@@ -1512,6 +1989,9 @@ namespace CleanSlate.UI
             _summaryLabel.ForeColor = palette.Text;
             _lblSelection.ForeColor = palette.TextSecondary;
             _lblThreshold.ForeColor = palette.TextSecondary;
+            _lblTheme.ForeColor = palette.TextSecondary;
+            _cboTheme.BackColor = palette.Surface;
+            _cboTheme.ForeColor = palette.Text;
             _footnoteLabel.ForeColor = palette.TextSecondary;
 
             ApplyButtonTheme(_btnAnalyze);
@@ -1522,6 +2002,31 @@ namespace CleanSlate.UI
             ApplyButtonTheme(_btnDeselectAll);
             ApplyButtonTheme(_btnInfo);
             ApplyButtonTheme(_btnSettings);
+            ApplyButtonTheme(_btnDetails);
+
+            if (_cleanResultsPanel != null)
+            {
+                _cleanResultsPanel.BackColor = palette.Surface;
+                _cleanStatusLabel.ForeColor = _lastClean != null
+                    ? ResolveStatusColor(_lastClean, _lastEmptyClean)
+                    : palette.Text;
+                _spaceValueLabel.ForeColor = palette.Text;
+                _spaceCaptionLabel.ForeColor = palette.TextSecondary;
+                _statDeletedCaption.ForeColor = palette.TextSecondary;
+                _statDeletedValue.ForeColor = palette.Text;
+                _statSkippedCaption.ForeColor = palette.TextSecondary;
+                _statSkippedValue.ForeColor = palette.Text;
+                _statErrorCaption.ForeColor = palette.TextSecondary;
+                _statErrorValue.ForeColor = palette.Text;
+                _statFolderCaption.ForeColor = palette.TextSecondary;
+                _statFolderValue.ForeColor = palette.Text;
+            }
+            if (_detailsPanel != null)
+            {
+                _detailsPanel.BackColor = palette.Surface;
+                _detailsTextBox.BackColor = palette.GridBack;
+                _detailsTextBox.ForeColor = palette.Text;
+            }
 
             _grid.BackgroundColor = palette.GridBack;
             _grid.DefaultCellStyle.BackColor = palette.GridBack;
@@ -1595,6 +2100,11 @@ namespace CleanSlate.UI
         /// </summary>
         private void ApplyThemeIfChanged()
         {
+            // Tema forzato dall'utente: i messaggi di sistema non devono
+            // sovrascriverlo. Il ritorno al rilevamento avviene solo quando
+            // la preferenza torna "Automatico".
+            if (_themeChoice != ThemeChoice.Automatic) return;
+
             AppTheme detected;
             try
             {

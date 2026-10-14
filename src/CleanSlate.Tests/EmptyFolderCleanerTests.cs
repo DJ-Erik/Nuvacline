@@ -720,10 +720,16 @@ namespace CleanSlate.Tests
                         Assert.DoesNotContain("cartelleVuote", report,
                             "Con opzione spenta il report non deve avere chiavi cartelle.");
 
-                        string summary = LastMessageContaining(messages, "Pulizia completata.");
-                        Assert.NotNull(summary, "Il riepilogo di pulizia deve essere mostrato.");
-                        Assert.DoesNotContain("Cartelle vuote", summary,
-                            "Con opzione spenta il riepilogo non deve avere la sezione cartelle.");
+                        Label cleanStatus = GetField<Label>(form, "_cleanStatusLabel");
+                        Assert.NotNull(cleanStatus, "L'etichetta dello stato deve esistere.");
+                        Assert.Contains("Pulizia completata.", cleanStatus.Text,
+                            "Lo stato deve dichiarare il completamento.");
+                        Label deletedValue = GetField<Label>(form, "_statDeletedValue");
+                        Assert.Equal("1", deletedValue.Text,
+                            "Il contatore dei file eliminati deve essere reale.");
+                        Label folderValueOff = GetField<Label>(form, "_statFolderValue");
+                        Assert.Equal(string.Empty, folderValueOff.Text,
+                            "Con opzione spenta il contatore cartelle non deve mostrare valori.");
                     }
                     finally
                     {
@@ -784,11 +790,13 @@ namespace CleanSlate.Tests
                 Assert.Contains(": 3", report,
                     "Il conteggio delle cartelle rimosse deve essere reale.");
 
-                        string summary = LastMessageContaining(messages, "Pulizia completata.");
-                        Assert.NotNull(summary, "Il riepilogo di pulizia deve essere mostrato.");
-                        Assert.Contains("Cartelle vuote (fase separata e facoltativa):", summary,
-                            "Il riepilogo deve includere la sezione cartelle.");
-                        Assert.Contains("Rimosse: 3", summary, "Il conteggio deve essere nel riepilogo.");
+                        Label cleanStatus2 = GetField<Label>(form, "_cleanStatusLabel");
+                        Assert.NotNull(cleanStatus2, "L'etichetta dello stato deve esistere.");
+                        Assert.Contains("Pulizia completata.", cleanStatus2.Text,
+                            "Lo stato deve dichiarare il completamento.");
+                        Label folderValue2 = GetField<Label>(form, "_statFolderValue");
+                        Assert.Equal("3", folderValue2.Text,
+                            "Il conteggio delle cartelle rimosse deve essere reale.");
                     }
                     finally
                     {
@@ -842,10 +850,13 @@ namespace CleanSlate.Tests
                         Assert.DoesNotContain("Cartelle vuote rimosse", report,
                             "Con conferma rifiutata il report non deve avere la sezione cartelle.");
 
-                        string summary = LastMessageContaining(messages, "Pulizia completata.");
-                        Assert.NotNull(summary, "Il riepilogo di pulizia deve essere mostrato.");
-                        Assert.DoesNotContain("Cartelle vuote", summary,
-                            "Con conferma rifiutata il riepilogo non deve avere la sezione cartelle.");
+                        Label cleanStatus3 = GetField<Label>(form, "_cleanStatusLabel");
+                        Assert.NotNull(cleanStatus3, "L'etichetta dello stato deve esistere.");
+                        Assert.Contains("Pulizia completata.", cleanStatus3.Text,
+                            "Lo stato deve dichiarare il completamento.");
+                        Label folderValue3 = GetField<Label>(form, "_statFolderValue");
+                        Assert.Equal(string.Empty, folderValue3.Text,
+                            "Con conferma rifiutata il contatore cartelle non deve mostrare valori.");
                     }
                     finally
                     {

@@ -1,0 +1,18 @@
+﻿CleanSlate 0.3.0 - note su licenze e dipendenze
+==================================================
+
+Dipendenze di terze parti incluse nella distribuzione: NESSUNA.
+
+CleanSlate e' un singolo eseguibile compilato con il compilatore C#
+fornito con .NET Framework e non include librerie di terze parti.
+
+Requisito a runtime: .NET Framework 4.8 (o successivo), componente
+Microsoft gia' presente in Windows 10 (build 1903+) e Windows 11.
+Tale componente NON viene ridistribuito con questa cartella e resta
+soggetto alla licenza Microsoft di Windows.
+
+Gli strumenti usati SOLO per la compilazione (csc.exe in-box di
+.NET Framework) non vengono ridistribuiti.
+
+I file di questa cartella non contengono codice di terze parti,
+pubblicita, telemetria o risorse scaricate da Internet.

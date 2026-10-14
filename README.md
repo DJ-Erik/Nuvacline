@@ -1,4 +1,4 @@
-# CleanSlate 0.4.0
+# CleanSlate 0.4.5
 
 <img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
 
@@ -108,8 +108,8 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 181 test
-├── artifacts/alpha-0.4.0/ pacchetto distribuibile
+│   └── CleanSlate.Tests/  runner di test + 197 test
+├── artifacts/alpha-0.4.5/ pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -123,7 +123,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\alpha-0.4.0
+# compilazione + test + pacchetto portable in artifacts\alpha-0.4.5
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -138,7 +138,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **181 test** (159 di 0.3.6 + 22 `EmptyFolderCleanerTests` 0.4.0); i fallimenti residui sono `RowContextMenuTests` clipboard bloccati dall'ambiente (sessione bloccata → clipboard non disponibile, flaky), non difetti di prodotto |
+| Suite di test | **197 test** (159 di 0.3.6 + 22 `EmptyFolderCleanerTests` 0.4.0 + 16 `CleanupDetailsTests` 0.4.5); i 5 `RowContextMenuTests` clipboard possono fallire in sessione bloccata (flaky ambientale), non difetti di prodotto |
 | Verifica end-to-end GUI (`verify.ps1`) | **41/41 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
@@ -147,7 +147,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\alpha-0.4.0\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\alpha-0.4.5\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -168,6 +168,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Riepilogo di scansione e conteggi (scartati/esclusi dalla soglia, selezionati, report coerente) | `ScanSummaryTests` |
 | Informazioni e impostazioni: finestra modale, versione, testo privacy, menu ⚙, spunta conservazione report, persistenza KeepReports, default/valori non validi, report su richiesta, errori di salvataggio, nessuna cancellazione retroattiva | `InfoSettingsTests` |
 | Cartelle vuote 0.4.0: candidatura post-order in sola lettura, radice mai rimossa, junction non seguite né rimosse, race contenuto/junction, ACL, annullamento, invalidi/esterni, integrazione report, persistenza RemoveEmptyFolders, flussi GUI OFF/ON/conferma rifiutata | `EmptyFolderCleanerTests` |
+| Riepilogo post-pulizia compatto e finestra dettagli 0.4.5: conteggi effettivi, nessuna apertura automatica, pulsante che non ripete la pulizia, chiusura che conserva il riepilogo, liste vuote ed errori, pulizia parziale non presentata come successo, cartelle vuote OFF invariato, elenco completo esiti | `CleanupDetailsTests` |
 | Tema chiaro/scuro: rilevamento con seam, palette centralizzata (chiaro = colori di sistema, scuro = antracite fisso ad alto contrasto), applicazione/ripristino su `MainForm`, aggiornamento live `WM_THEMECHANGED`/`WM_SETTINGCHANGE`/`ImmersiveColorSet`, fallback chiaro su eccezione, nessun colore hardcoded fuori dalla palette, dialogo Informazioni, etichetta report | `ThemeTests` |
 
 I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il

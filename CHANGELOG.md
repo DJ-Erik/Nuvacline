@@ -2,6 +2,63 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.4.5] — 2026-10-14
+
+Riepilogo post-pulizia compatto nella finestra principale e dettagli completi in una
+finestra separata accessibile tramite un pulsante dedicato.
+
+### Aggiunto
+
+- **Finestra dei dettagli della pulizia** (`CleanupDetailsForm`): finestra modale con
+  barra di scorrimento, titolo «Dettagli della pulizia», dimensioni iniziali 560×420
+  e pulsante «Chiudi». Mostra il riepilogo completo (identico al testo storico del
+  MessageBox della 0.3.6/0.4.0) seguito dall'elenco esteso di **tutti** gli esiti dei
+  file e delle cartelle vuote con nome, esito e messaggio. Nessuna scorciatoia: anche
+  un solo elemento comparisce. La finestra non esegue mai nuove scansioni né pulizie.
+- **Pulsante «Visualizza dettagli»**: nella riga a piè di pagina della finestra
+  principale, agganciato al bordo sinistro. Disabilitato prima di una pulizia,
+  abilitato al termine. Premendolo apre la finestra dei dettagli dell'ultima pulizia.
+  La chiusura torna alla finestra principale senza perdere il riepilogo.
+- **Riepilogo compatto post-pulizia**: dopo una pulizia l'etichetta del riepilogo
+  (lblSummary) mostra stato, spazio effettivamente recuperato, file eliminati,
+  cartelle vuote rimosse (se la fase è stata eseguita), saltati, errori e spazio non
+  recuperato. Con un primo errore viene mostrato nome e messaggio del primo fallito.
+  Una pulizia annullata mostra «Pulizia annullata.», mai «Pulizia completata.».
+  Una fase cartelle non riuscita mostra solo l'errore, mai conteggi di un'operazione
+  fallita.
+- **16 nuovi test** `CleanupDetailsTests`: riepilogo con conteggi effettivi, sezione
+  cartelle gated, annullamento non presentato come successo, errore mostrato, fase
+  cartelle fallita senza conteggi, struttura della finestra (sizable, TextBox sola
+  lettura con scroll, pulsante Chiudi), elenco completo degli esiti (non troncato a 6),
+  sezione cartelle gated nella finestra, lista vuota gestita, nessuna apertura
+  automatica, pulsante che apre senza ripetere la pulizia, chiusura che conserva il
+  riepilogo, pulsante disabilitato prima/abilitato dopo, pulizia parziale (file
+  bloccato) non presentata come successo completo, opzione cartelle vuote OFF che
+  mantiene il comportamento precedente. La suite passa da 181 a **197**.
+
+### Aggiornato
+
+- **MessageBox di riepilogo rimossa**: dopo una pulizia non viene più mostrato un
+  MessageBox con i dettagli; il riepilogo compatto resta nell'etichetta della finestra
+  principale e i dettagli completi si aprono solo su richiesta. I 3 test `FullFlow`
+  di `EmptyFolderCleanerTests` sono stati adattati per verificare l'etichetta invece
+  del messaggio.
+- `BuildCleanSummaryText` è ora `internal static` (accessibile ai test dell'assembly
+  separato); il testo prodotto è **invariato** rispetto alla 0.4.0, quindi il report
+  TXT/JSON e la finestra dettagli restano coerenti.
+- Versione ufficiale del prodotto portata da `0.4.0` a `0.4.5`:
+  `AssemblyVersion`/`AssemblyFileVersion` `0.4.5.0`, `AssemblyInformationalVersion`
+  `0.4.5`, identità e descrizione del manifest, documentazione, test di versione e
+  verifica.
+- Percorso del pacchetto portable: `artifacts/alpha-0.4.5/`.
+
+### Note
+
+- Nessuna modifica al motore di scansione, cancellazione, cartelle vuote, conferma o
+  report. Il comportamento predefinito di rimozione cartelle vuote resta disattivato.
+- `BuildCompactSummary` è un nuovo metodo puro statico; il riepilogo storico
+  `BuildCleanSummaryText` resta invariato per il report e la finestra dettagli.
+
 ## [0.4.0] — 2026-10-14
 
 Rimozione prudente delle cartelle vuote residue sotto la radice temporanea, come fase

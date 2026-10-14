@@ -16,7 +16,9 @@ namespace CleanSlate.Tests
     /// Nessun test dipende dal tema realmente impostato sulla macchina: la
     /// rilevazione passa dal seam WindowsTheme.AppsUseLightThemeReader (e dal
     /// seam di istanza _detectTheme di MainForm), che i test iniettano e
-    /// ripristinano sempre. Coprono: mappatura del valore di tema, fallback
+    /// ripristinano sempre; inoltre la preferenza _themeChoice viene fissata
+    /// su Automatic così la preferenza persistita nel settings.txt reale
+    /// dell'utente non può influenzare le asserzioni. Coprono: mappatura del valore di tema, fallback
     /// chiaro su errore, palette centralizzata e contrasto leggibile,
     /// applicazione e ripristino su MainForm, finestra Informazioni, etichetta
     /// del report, aggiornamento in tempo reale via WM_SETTINGCHANGE /
@@ -191,6 +193,9 @@ namespace CleanSlate.Tests
             {
                 using (MainForm form = new MainForm())
                 {
+                    // Preferenza su automatica: il risultato deve dipendere solo
+                    // dal seam iniettato, mai dal settings.txt della macchina.
+                    SetField(form, "_themeChoice", ThemeChoice.Automatic);
                     SetField(form, "_detectTheme",
                         new Func<AppTheme>(delegate { return AppTheme.Dark; }));
                     Invoke(form, "ApplyTheme", null);
@@ -276,6 +281,14 @@ namespace CleanSlate.Tests
             {
                 using (MainForm form = new MainForm())
                 {
+                    // Con preferenza automatica (il predefinito) il tema segue la
+                    // rilevazione, indipendentemente da un eventuale preferenza
+                    // salvata nel settings.txt della macchina.
+                    SetField(form, "_loadThemeChoice",
+                        new Func<ThemeChoice>(delegate { return ThemeChoice.Automatic; }));
+                    Invoke(form, "LoadThemeChoiceSetting", null);
+                    Invoke(form, "ApplyTheme", null);
+
                     Assert.Equal(expected.Theme, GetFieldValue(form, "_currentTheme"),
                         "Il tema iniziale deve corrispondere a quello rilevato.");
                     Assert.Equal(expected.Surface.ToArgb(), form.BackColor.ToArgb(),
@@ -298,6 +311,7 @@ namespace CleanSlate.Tests
             {
                 using (MainForm form = new MainForm())
                 {
+                    SetField(form, "_themeChoice", ThemeChoice.Automatic);
                     SetField(form, "_detectTheme", new Func<AppTheme>(delegate
                     {
                         throw new IOException("lettura del tema non disponibile");
@@ -326,6 +340,7 @@ namespace CleanSlate.Tests
             {
                 using (MainForm form = new MainForm())
                 {
+                    SetField(form, "_themeChoice", ThemeChoice.Automatic);
                     SetField(form, "_detectTheme",
                         new Func<AppTheme>(delegate { return AppTheme.Dark; }));
                     Invoke(form, "ApplyTheme", null);
@@ -370,6 +385,7 @@ namespace CleanSlate.Tests
             {
                 using (MainForm form = new MainForm())
                 {
+                    SetField(form, "_themeChoice", ThemeChoice.Automatic);
                     SetField(form, "_detectTheme",
                         new Func<AppTheme>(delegate { return AppTheme.Dark; }));
                     Invoke(form, "ApplyTheme", null);
@@ -416,6 +432,7 @@ namespace CleanSlate.Tests
                 {
                     int reads = 0;
                     bool dark = false;
+                    SetField(form, "_themeChoice", ThemeChoice.Automatic);
                     SetField(form, "_detectTheme", new Func<AppTheme>(delegate
                     {
                         reads++;

@@ -60,9 +60,15 @@ namespace CleanSlate.Core
         /// </summary>
         public const bool DefaultRemoveEmptyFolders = false;
 
+        /// <summary>
+        /// Tema predefinito: automatico, cioè segue le impostazioni di Windows.
+        /// </summary>
+        public const ThemeChoice DefaultThemeChoice = ThemeChoice.Automatic;
+
         private const string KeyMinAgeHours = "MinAgeHours";
         private const string KeyKeepReports = "KeepReports";
         private const string KeyRemoveEmptyFolders = "RemoveEmptyFolders";
+        private const string KeyTheme = "Theme";
 
         /// <summary>Opzioni disponibili, in ordine di visualizzazione.</summary>
         public static ScanThresholdOption[] CreateOptions()
@@ -294,6 +300,88 @@ namespace CleanSlate.Core
         public static bool SaveRemoveEmptyFolders(bool removeEmptyFolders)
         {
             return SaveRemoveEmptyFoldersTo(SettingsPath, removeEmptyFolders);
+        }
+
+        /// <summary>Carica la preferenza del tema dal percorso predefinito.</summary>
+        public static ThemeChoice LoadThemeChoice()
+        {
+            return LoadThemeChoiceFrom(SettingsPath);
+        }
+
+        /// <summary>
+        /// Carica la preferenza del tema dal percorso indicato. Qualsiasi problema
+        /// (file assente, riga malformata, valore non valido, errori di I/O)
+        /// produce il valore predefinito: tema automatico.
+        /// </summary>
+        public static ThemeChoice LoadThemeChoiceFrom(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                    return DefaultThemeChoice;
+
+                string[] lines = File.ReadAllLines(path);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i].Trim();
+                    if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) continue;
+
+                    int separator = line.IndexOf('=');
+                    if (separator <= 0) continue;
+
+                    string key = line.Substring(0, separator).Trim();
+                    string value = line.Substring(separator + 1).Trim();
+                    if (!string.Equals(key, KeyTheme, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    return ThemeChoiceFromText(value);
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (SecurityException) { }
+
+            return DefaultThemeChoice;
+        }
+
+        /// <summary>Salva la preferenza del tema nel percorso predefinito.</summary>
+        public static bool SaveThemeChoice(ThemeChoice choice)
+        {
+            return SaveThemeChoiceTo(SettingsPath, choice);
+        }
+
+        /// <summary>
+        /// Salva la preferenza del tema nel percorso indicato, preservando le
+        /// altre chiavi già presenti nel file. Valori fuori dall'enum vengono
+        /// normalizzati su automatico. Restituisce false se la scrittura non riesce.
+        /// </summary>
+        public static bool SaveThemeChoiceTo(string path, ThemeChoice choice)
+        {
+            return WriteSetting(path, KeyTheme, ThemeChoiceToText(choice));
+        }
+
+        /// <summary>
+        /// Converte il testo persistito in una preferenza: "light" chiaro,
+        /// "dark" scuro, qualsiasi altro valore (compreso "auto" e il vuoto)
+        /// produce il tema automatico.
+        /// </summary>
+        public static ThemeChoice ThemeChoiceFromText(string value)
+        {
+            if (string.Equals(value, "light", StringComparison.OrdinalIgnoreCase))
+                return ThemeChoice.Light;
+            if (string.Equals(value, "dark", StringComparison.OrdinalIgnoreCase))
+                return ThemeChoice.Dark;
+            return ThemeChoice.Automatic;
+        }
+
+        /// <summary>
+        /// Converte la preferenza nel testo persistito. Valori fuori
+        /// dall'enum producono "auto" (fail-safe sul tema di sistema).
+        /// </summary>
+        public static string ThemeChoiceToText(ThemeChoice choice)
+        {
+            if (choice == ThemeChoice.Light) return "light";
+            if (choice == ThemeChoice.Dark) return "dark";
+            return "auto";
         }
 
         /// <summary>
