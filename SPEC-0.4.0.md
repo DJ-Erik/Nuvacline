@@ -1,9 +1,13 @@
 # Specifica tecnica — 0.4.0 Rimozione prudente delle cartelle vuote
 
-**Stato: BOZZA in attesa di autorizzazione esplicita. Non implementata.**
-Il prodotto rilasciato (0.3.6, commit `c1d0c4f`) non modifica cartelle: il motore di
+**Stato: AUTORIZZATA e IMPLEMENTATA (2026-10-14).** Le decisioni
+vincolanti qui sotto sono state confermate per iscritto: opzione **disattivata di
+default**, fase **opzionale, esplicita e distinta** dalla pulizia dei file, ambito
+limitato alla directory temporanea validata. Implementazione completa in
+`EmptyFolderCleaner.cs` + wiring `MainForm` + 22 test `EmptyFolderCleanerTests`.
+Il prodotto rilasciato alla 0.3.6 (commit `c1d0c4f`) non modifica cartelle: il motore di
 pulizia rimuove solo file singoli, verificati uno a uno. Nessuna riga di questa specifica
-è stata implementata e non lo sarà finché l'autorizzazione non viene concessa per iscritto.
+era stata implementata prima dell'autorizzazione.
 
 Motivazione: dopo una pulizia, le cartelle diventate vuote sotto la radice autorizzata
 restano sul disco. La 0.4.0 le rimuoverbbe applicando le stesse regole di sicurezza già
@@ -16,28 +20,47 @@ cartelle diventate vuote"): per questo è un incremento **minor**, non un patch.
 
 - **Attivazione**: solo al termine di una pulizia esplicitamente confermata dall'utente e
   **non annullata**. Mai dopo la sola analisi (che resta in sola lettura, invariata).
-- **Impostazione**: voce "Rimuovi anche le cartelle diventate vuote" nel menu ⚙, spuntata
-  di default, persistita con `ScanSettings` nella chiave indipendente
+- **Fase separata**: con l'opzione attiva, dopo la pulizia dei file viene eseguito un
+  **sondaggio in sola lettura** delle cartelle vuote e poi una **conferma dedicata** con
+  il numero di cartelle candidate (default **No**). Rifiutare la conferma (oppure avere
+  l'opzione spenta) lascia il sistema esattamente come prima: nessuna rimozione, nessuna
+  voce nel report e nessuna sezione nel riepilogo. Fase e pulizia dei file sono quindi
+  **opzionali, esplicite e distinte** tra loro.
+- **Impostazione**: voce "Rimuovi anche le cartelle diventate vuote" nel menu ⚙,
+  **non spuntata di default** (decisione vincolante: il default eredita il comportamento
+  0.3.6), persistita con `ScanSettings` nella chiave indipendente
   `RemoveEmptyFolders=<0|1>` (le chiavi esistenti `MinAgeHours`/`KeepReports` restano
-  intatte, come già previsto dal formato).
+  intatte, come già previsto dal formato; valore mancante o non valido ⇒ disattivata).
 - **Selezione**: si considerano **tutte** le sottocartelle della radice che risultano
   vuote al momento della fase di rimozione, non solo quelle da cui sono stati cancellati
   file in questa esecuzione. Motivo: pulizie parziali/annullate in precedenza possono
   aver lasciato cartelle vuote.
 - **Ordine**: post-order (le figlie prima dei padri); ogni rimozione è indipendente.
-- **Criterio "vuota"**: `Directory.EnumerateFileSystemEntries` non restituisce nulla
-  (né file, né cartelle, né altri elementi) al momento della re-verifica.
+- **Candidatura (sondaggio)**: una sottocartella viene proposta se non contiene file
+  diretti e se tutti i suoi discendenti directory sono anch'essi proposti (i reparse
+  point la disqualificano, perché sopravviverebbero alla fase). Serve per rimuovere in
+  una sola esecuzione un albero annidato tutto vuoto (test §5.3) senza mai toccare file.
+- **Criterio "vuota" (re-verifica in Remove)**: `Directory.EnumerateFileSystemEntries`
+  non restituisce nulla (né file, né cartelle, né altri elementi) al momento della
+  cancellazione. In post-order la figlia è già stata rimossa, quindi il padre risulta
+  effettivamente vuoto nell'istante dell'azione; se non lo è (race), la cartella viene
+  conservata e l'esito registrato.
 - **Soglia d'età (`MinAge`)**: **non** viene applicata alle cartelle. Su NTFS la
   cancellazione di un file aggiorna il `LastWriteTimeUtc` della cartella che lo conteneva:
   applicare la soglia dopo le cancellazioni escluderebbe sistematicamente le cartelle
   appena svuotate. La sicurezza non dipende dall'età per directory vuote, che non
   contengono dati.
-- **Esiti** (modellati come per i file, enum dedicato):
-  `EmptyDirectoryRemoved`, `SkippedNotEmpty`, `SkippedReparse`, `SkippedOutsideRoot`,
-  `SkippedRoot`, `SkippedInvalidPath`, `SkippedCancelled`, `Failed`.
+- **Esiti** (modellati come per i file, enum dedicato `EmptyDirectoryOutcome`):
+  `Removed`, `SkippedNotFound`, `SkippedNotEmpty`, `SkippedReparse`,
+  `SkippedOutsideRoot`, `SkippedRoot`, `SkippedInvalidPath`, `SkippedCancelled`,
+  `Failed`. Contatori e item risiedono in classi dedicate (`EmptyFolderSurvey` per il
+  sondaggio, `EmptyCleanResult` per la rimozione): `CleanResult` dei file **non** viene
+  modificato, così la 0.3.6 resta intatta quando l'opzione è spenta.
 - **Riepilogo e report**: nuova riga "Cartelle vuote rimosse: N" (TXT) e chiave
-  `cartelleVuoteRimosse` (JSON), insieme a eventuali errori. Nessun percorso assoluto:
-  la radice è sostituita dal segnaposto `%TEMP%` come per i file.
+  `cartelleVuoteRimosse` (JSON), insieme a saltati/errori, **emessi solo se la fase è
+  stata davvero eseguita** (con l'opzione spenta il report è identico alla 0.3.6).
+  Nessun percorso assoluto: la radice è sostituita dal segnaposto `%TEMP%` come per i
+  file.
 - **Annullamento**: cooperativo, come per i file; se l'utente annulla durante la fase
   cartelle, l'operazione termina dichiarando "pulizia annullata" e i conteggi parziali.
 
@@ -113,14 +136,14 @@ cartelle diventate vuote"): per questo è un incremento **minor**, non un patch.
 
 ## 6. Criteri di accettazione complessivi
 
-- [ ] Perimetro rispettato: solo directory vuote sotto la radice `%TEMP%` validata; zero
+- [x] Perimetro rispettato: solo directory vuote sotto la radice `%TEMP%` validata; zero
       rimozioni fuori radice; zero reparse point rimossi o seguiti.
-- [ ] Comportamento predefinito 0.3.6 per i file **invariato** (suite attuale invariata).
-- [ ] Nuovi test §5 tutti superati; suite totale attesa ≥ 171 (159 attuali + ≥12 nuovi).
+- [x] Comportamento predefinito 0.3.6 per i file **invariato** (suite attuale invariata).
+- [x] Nuovi test §5 tutti superati; suite totale **181** (159 attuali + 22 nuovi).
 - [ ] `verify.ps1` 41/41 sull'exe del pacchetto; eventuale nuovo check documentato.
-- [ ] Scan stringhe exe: nessun token vietato aggiuntivo (PrivacyTests + audit manuale).
-- [ ] Riepilogo e report dichiarano i conteggi; nessun dato personale o percorso utente.
-- [ ] Docs aggiornate: CHANGELOG 0.4.0, README (contratto e limiti), TASKS (FASE dedicata),
+- [x] Scan stringhe exe: nessun token vietato aggiuntivo (PrivacyTests + audit manuale).
+- [x] Riepilogo e report dichiarano i conteggi; nessun dato personale o percorso utente.
+- [x] Docs aggiornate: CHANGELOG 0.4.0, README (contratto e limiti), TASKS (FASE dedicata),
       SECURITY (nuova superficie di cancellazione descritta), PRIVACY (nessun nuovo dato).
 - [ ] Bump `0.4.0.0`/`0.4.0`, pacchetto `artifacts/alpha-0.4.0/` con SHA256SUMS;
       i pacchetti `alpha-0.3`, `alpha-0.3.5`, `alpha-0.3.6` restano intatti.
@@ -131,8 +154,8 @@ cartelle diventate vuote"): per questo è un incremento **minor**, non un patch.
 | File | Modifica |
 |---|---|
 | `src/CleanSlate/Core/EmptyFolderCleaner.cs` | Nuovo: classe separata (review sicurezza dedicata) |
-| `src/CleanSlate/Core/CleanModels.cs` | Enum esito directory, contatori in `CleanResult` |
-| `src/CleanSlate/Core/ScanSettings.cs` | Chiave `RemoveEmptyFolders` (default attiva) |
+| `src/CleanSlate/Core/CleanModels.cs` | Enum `EmptyDirectoryOutcome` + classi `EmptyFolderSurvey`/`EmptyCleanResult` (conteggi separati, `CleanResult` invariata) |
+| `src/CleanSlate/Core/ScanSettings.cs` | Chiave `RemoveEmptyFolders` (default **disattivata**) |
 | `src/CleanSlate/UI/MainForm.cs` | Fase opzionale dopo pulizia non annullata, menu ⚙, riepilogo |
 | `src/CleanSlate/Core/ReportBuilder.cs`, `ReportExporter.cs` | Righe TXT/JSON dei conteggi |
 | `src/CleanSlate.Tests/EmptyFolderCleanerTests.cs` | Nuovo: test §5 |

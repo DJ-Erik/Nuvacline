@@ -169,21 +169,21 @@ namespace CleanSlate.Tests
         #region Versione
 
         [Test]
-        public void CanonicalVersion_Is_0_3_6_AndUsedEverywhere()
+        public void CanonicalVersion_Is_0_4_0_AndUsedEverywhere()
         {
-            Assert.Equal("0.3.6", AppInfo.VersionText,
-                "La versione canonica del prodotto deve essere 0.3.6.");
+            Assert.Equal("0.4.0", AppInfo.VersionText,
+                "La versione canonica del prodotto deve essere 0.4.0.");
 
             Exception failure = null;
             RunInSta(delegate
             {
                 using (MainForm form = new MainForm())
                 {
-                    Assert.Equal("CleanSlate 0.3.6", form.Text,
-                        "Il titolo della finestra deve riportare la versione 0.3.6.");
+                    Assert.Equal("CleanSlate 0.4.0", form.Text,
+                        "Il titolo della finestra deve riportare la versione 0.4.0.");
                     Label title = GetField<Label>(form, "_titleLabel");
-                    Assert.Equal("CleanSlate 0.3.6", title.Text,
-                        "L'etichetta del titolo deve riportare la versione 0.3.6.");
+                    Assert.Equal("CleanSlate 0.4.0", title.Text,
+                        "L'etichetta del titolo deve riportare la versione 0.4.0.");
                 }
             }, out failure);
             if (failure != null) throw failure;
@@ -329,6 +329,7 @@ namespace CleanSlate.Tests
                         ScanSettings.SaveKeepReportsTo(settings, true);
                         PointSeams(form, settings, null);
                         Invoke(form, "LoadKeepReportsSetting", new object[] { });
+                        Invoke(form, "LoadRemoveEmptyFoldersSetting", new object[] { });
 
                         ToolStripMenuItem item = GetField<ToolStripMenuItem>(form, "_miKeepReports");
                         Assert.NotNull(item, "La voce di conservazione deve esistere.");
@@ -347,10 +348,23 @@ namespace CleanSlate.Tests
                         Assert.NotNull(GetField<ToolStripSeparator>(form, "_settingsSeparator"),
                             "Il separatore del menu deve esistere.");
 
+                        // 0.4.0: quarta voce per la rimozione delle cartelle vuote.
+                        ToolStripMenuItem folders = GetField<ToolStripMenuItem>(form, "_miRemoveEmptyFolders");
+                        Assert.NotNull(folders, "La voce di rimozione cartelle vuote deve esistere.");
+                        Assert.Equal("Rimuovi anche le cartelle diventate vuote", folders.Text,
+                            "Testo della voce di rimozione cartelle atteso.");
+                        Assert.Equal("miRemoveEmptyFolders", folders.Name,
+                            "Nome della voce di rimozione cartelle atteso.");
+                        Assert.True(folders.CheckOnClick, "La voce cartelle deve commutare con un clic.");
+                        Assert.False(folders.Checked,
+                            "La rimozione cartelle vuote deve essere disattivata di default.");
+                        Assert.False((bool)GetFieldValue(form, "_removeEmptyFolders"),
+                            "Lo stato interno cartelle deve riflettere il default disattivato.");
+
                         ContextMenuStrip menu = GetField<ContextMenuStrip>(form, "_settingsMenu");
                         Assert.NotNull(menu, "Il menu delle impostazioni deve esistere.");
                         Assert.Equal("menuSettings", menu.Name, "Nome del menu atteso.");
-                        Assert.Equal(3, menu.Items.Count, "Il menu deve contenere esattamente tre voci.");
+                        Assert.Equal(4, menu.Items.Count, "Il menu deve contenere esattamente quattro voci.");
                     }
                     finally
                     {
@@ -706,6 +720,10 @@ namespace CleanSlate.Tests
                     new Func<bool>(delegate { return ScanSettings.LoadKeepReportsFrom(settings); }));
                 SetField(form, "_saveKeepReports",
                     new Func<bool, bool>(delegate(bool keep) { return ScanSettings.SaveKeepReportsTo(settings, keep); }));
+                SetField(form, "_loadRemoveEmptyFolders",
+                    new Func<bool>(delegate { return ScanSettings.LoadRemoveEmptyFoldersFrom(settings); }));
+                SetField(form, "_saveRemoveEmptyFolders",
+                    new Func<bool, bool>(delegate(bool remove) { return ScanSettings.SaveRemoveEmptyFoldersTo(settings, remove); }));
             }
             if (!string.IsNullOrEmpty(reportsFolder))
             {

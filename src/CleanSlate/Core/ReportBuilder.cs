@@ -45,6 +45,12 @@ namespace CleanSlate.Core
         public int CleanErrors { get; set; }
         public long EstimatedNotRecovered { get; set; }
 
+        public bool EmptyCleanAvailable { get; set; }
+        public bool EmptyCleanCancelled { get; set; }
+        public int EmptyDirectoriesRemoved { get; set; }
+        public int EmptyDirectoriesSkipped { get; set; }
+        public int EmptyDirectoriesErrors { get; set; }
+
         public string DurationText { get; set; }
         public List<string> Notes { get; set; }
     }
@@ -58,7 +64,18 @@ namespace CleanSlate.Core
     {
         public const string RootPlaceholder = "%TEMP%";
 
+        /// <summary>Costruisce il report senza fase cartelle (comportamento 0.3.6).</summary>
         public static ReportData Build(ScanResult scan, CleanResult clean, string authorizedRoot)
+        {
+            return Build(scan, clean, null, authorizedRoot);
+        }
+
+        /// <summary>
+        /// Costruisce il report. La fase opzionale delle cartelle vuote viene inclusa
+        /// solo se <paramref name="emptyFolders"/> non è null: con l'opzione disattivata
+        /// (nessuna fase eseguita) l'uscita è identica alla 0.3.6.
+        /// </summary>
+        public static ReportData Build(ScanResult scan, CleanResult clean, EmptyCleanResult emptyFolders, string authorizedRoot)
         {
             ReportData data = new ReportData();
             data.ProductName = "CleanSlate";
@@ -92,6 +109,18 @@ namespace CleanSlate.Core
                 data.EstimatedNotRecovered = clean.EstimatedNotRecovered;
             }
 
+            if (emptyFolders != null)
+            {
+                data.EmptyCleanAvailable = true;
+                data.EmptyCleanCancelled = emptyFolders.Cancelled;
+                data.EmptyDirectoriesRemoved = emptyFolders.RemovedCount;
+                data.EmptyDirectoriesSkipped = emptyFolders.SkippedCount;
+                data.EmptyDirectoriesErrors = emptyFolders.ErrorCount;
+                if (!string.IsNullOrEmpty(emptyFolders.ErrorMessage))
+                    data.Notes.Add("La rimozione delle cartelle vuote non è stata completata: "
+                        + Sanitize(emptyFolders.ErrorMessage, authorizedRoot));
+            }
+
             if (data.ScanAvailable && data.CleanAvailable)
                 data.Operation = "Analisi e pulizia";
             else if (data.ScanAvailable)
@@ -104,14 +133,20 @@ namespace CleanSlate.Core
             TimeSpan duration = TimeSpan.Zero;
             if (scan != null) duration = duration + scan.Duration;
             if (clean != null) duration = duration + clean.Duration;
+            if (emptyFolders != null) duration = duration + emptyFolders.Duration;
             data.DurationText = duration.TotalSeconds.ToString("N1", System.Globalization.CultureInfo.CurrentCulture) + " s";
 
             if (data.ScanAvailable && !data.ScanCancelled && data.FilesEligible == 0 && data.ScanErrors == 0)
-                data.Notes.Add("Non sono stati trovati file temporanei recuperabili secondo le regole della versione 0.3.6.");
+                data.Notes.Add("Non sono stati trovati file temporanei recuperabili secondo le regole della versione 0.4.0.");
             if (data.ScanAvailable && data.ScanCancelled)
                 data.Notes.Add("L'analisi è stata annullata: i valori si riferiscono ai risultati parziali.");
             if (data.CleanAvailable && data.CleanCancelled)
                 data.Notes.Add("La pulizia è stata annullata: alcuni elementi non sono stati considerati.");
+            if (data.EmptyCleanAvailable)
+                data.Notes.Add("La fase delle cartelle vuote viene eseguita solo dopo una pulizia confermata "
+                    + "e non annullata, con una conferma dedicata: è disattivata di default.");
+            if (data.EmptyCleanAvailable && data.EmptyCleanCancelled)
+                data.Notes.Add("La rimozione delle cartelle vuote è stata annullata: i conteggi sono parziali.");
             if (data.EstimatedBytes > 0 && data.CleanAvailable)
                 data.Notes.Add("Lo spazio indicato come non recuperato è una stima e non indica spazio corrotto.");
             data.Notes.Add("Valori di dimensione stimati in base a quanto dichiarato dal filesystem.");

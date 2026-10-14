@@ -1,4 +1,4 @@
-# CleanSlate 0.3.6
+# CleanSlate 0.4.0
 
 <img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
 
@@ -11,9 +11,11 @@ tutto** e **Deseleziona tutto** permettono di spuntare o azzerare l'intera lista
 clic, mentre un **menu contestuale** (clic destro su una riga) permette di copiare il nome o
 la cartella del file e di aprirlo in Esplora file selezionandolo, senza mai eseguirlo.
 Il pulsante **?** apre la finestra **Informazioni** (scopo, privacy, avvertenze) e il pulsante
-**⚙** apre le **Impostazioni**, dove si attiva o disattiva la conservazione dei report e si
-apre la cartella che li contiene. L'interfaccia segue **automaticamente il tema chiaro/scuro
-di Windows**, aggiornandosi anche al cambio di tema mentre il programma è aperto.
+**⚙** apre le **Impostazioni**, dove si attiva o disattiva la conservazione dei report, la
+**rimozione delle cartelle diventate vuote** (disattivata di default, con conferma dedicata
+che elenca il numero di candidate) e si apre la cartella dei report. L'interfaccia segue
+**automaticamente il tema chiaro/scuro di Windows**, aggiornandosi anche al cambio di tema
+mentre il programma è aperto.
 
 CleanSlate **non promette di accelerare il computer**. Rimuove soltanto file temporanei
 dell'utente corrente che sono più vecchi di 24 ore (soglia configurabile da interfaccia:
@@ -38,9 +40,14 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
 2. Premere **Analizza**: l'analisi è in sola lettura e non modifica nulla.
 3. Esaminare l'elenco, selezionare o deselezionare gli elementi desiderati.
 4. Premere **Pulisci selezionati** e confermare nella finestra di conferma.
-5. **Apri report** apre il report locale generato al termine dell'analisi o della pulizia.
-6. **?** mostra le informazioni sul prodotto; **⚙** consente di attivare o disattivare la
-   conservazione dei report e di aprire la cartella che li contiene.
+5. Se è attiva l'opzione **Rimuovi anche le cartelle diventate vuote** (⚙, disattivata di
+   default), al termine della pulizia compare una **seconda conferma** con il numero di
+   cartelle vuote trovate: accettando vengono rimosse in ordine post-order, senza mai
+   toccare la radice o i collegamenti.
+6. **Apri report** apre il report locale generato al termine dell'analisi o della pulizia.
+7. **?** mostra le informazioni sul prodotto; **⚙** consente di attivare o disattivare la
+   conservazione dei report e la rimozione delle cartelle vuote, e di aprire la cartella
+   dei report.
 
 **Annullare** è sempre disponibile: l'analisi e la pulizia sono cooperativamente annullabili.
 
@@ -62,26 +69,31 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
    predefinita. La soglia è configurabile dall'interfaccia (1 ora, 6 ore, 12 ore, 24 ore,
    48 ore, 7 giorni, nessuna soglia) e viene salvata in
    `%LOCALAPPDATA%\CleanSlate\settings.txt`, dove viene conservata anche la preferenza
-   di salvataggio dei report (`KeepReports`).
-3. **File bloccati**: vengono saltati e conteggiati come errori, mai forzati.
-4. **Percorsi lunghi**: il manifest dichiara `longPathAware`, ma il runtime .NET Framework può
+   di salvataggio dei report (`KeepReports`) e quella di rimozione delle cartelle vuote
+   (`RemoveEmptyFolders`, disattivata di default).
+3. **Cartelle vuote**: la rimozione delle cartelle diventate vuote è **opzionale e
+   disattivata di default**; quando attiva richiede una conferma dedicata con il
+   conteggio delle candidate. La radice non viene mai rimossa e i collegamenti
+   (junction/symlink) non vengono mai seguiti né eliminati.
+4. **File bloccati**: vengono saltati e conteggiati come errori, mai forzati.
+5. **Percorsi lunghi**: il manifest dichiara `longPathAware`, ma il runtime .NET Framework può
    comunque rifiutare alcuni percorsi oltre 260 caratteri: in tal caso l'elemento viene saltato
    e contato, mai eliminato a caso.
-5. **Ripristino ACL nei test**: il ripristino dei permessi di test usa `icacls /reset` perché
+6. **Ripristino ACL nei test**: il ripristino dei permessi di test usa `icacls /reset` perché
    .NET Framework non persiste la modifica di un oggetto di sicurezza non modificato in memoria.
    È un dettaglio del fixture di test, non dell'applicazione.
-6. **Nessun .NET SDK in ambiente**: la compilazione usa `csc.exe` in-box di .NET Framework
+7. **Nessun .NET SDK in ambiente**: la compilazione usa `csc.exe` in-box di .NET Framework
    (C# 5), non il SDK .NET. Conseguenza: niente xUnit (c'è un runner di test equivalente).
-7. **La verifica end-to-end esegue solo l'analisi**, mai una pulizia reale sul `%TEMP%`:
+8. **La verifica end-to-end esegue solo l'analisi**, mai una pulizia reale sul `%TEMP%`:
    automatizzare la cancellazione eliminerebbe file dell'utente durante un test. Il motore di
    cancellazione e il suo percorso di conferma sono esercitati dai test su fixture dedicati.
-8. **La selezione della singola riga non è automatabile**: la griglia WinForms non espone le
+9. **La selezione della singola riga non è automatabile**: la griglia WinForms non espone le
    righe come elementi di automazione.
-9. **Controlli nativi non tematizzati**: le finestre di sistema (MessageBox), il ComboBox
-   della soglia e la barra del titolo usano i colori nativi di Windows anche in tema scuro:
-   WinForms su .NET Framework non espone un controllo affidabile per ridisegnarli, quindi
-   restano al rendering del sistema. La palette scura copre finestra, testi, tabella,
-   pulsanti, menu, dialogo Informazioni e etichette.
+10. **Controlli nativi non tematizzati**: le finestre di sistema (MessageBox), il ComboBox
+    della soglia e la barra del titolo usano i colori nativi di Windows anche in tema scuro:
+    WinForms su .NET Framework non espone un controllo affidabile per ridisegnarli, quindi
+    restano al rendering del sistema. La palette scura copre finestra, testi, tabella,
+    pulsanti, menu, dialogo Informazioni e etichette.
 
 ## Struttura del repository
 
@@ -96,8 +108,8 @@ cleanslate/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 159 test
-├── artifacts/alpha-0.3.6/ pacchetto distribuibile
+│   └── CleanSlate.Tests/  runner di test + 181 test
+├── artifacts/alpha-0.4.0/ pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -111,7 +123,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\alpha-0.3.6
+# compilazione + test + pacchetto portable in artifacts\alpha-0.4.0
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -126,7 +138,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **154/159 superati** (145 di 0.3.0 + 13 `ThemeTests` + 1 conteggio cartelle 0.3.6); i 5 residui sono `RowContextMenuTests` bloccati dall'ambiente (sessione bloccata → clipboard non disponibile), non difetti di prodotto |
+| Suite di test | **181 test** (159 di 0.3.6 + 22 `EmptyFolderCleanerTests` 0.4.0); i fallimenti residui sono `RowContextMenuTests` clipboard bloccati dall'ambiente (sessione bloccata → clipboard non disponibile, flaky), non difetti di prodotto |
 | Verifica end-to-end GUI (`verify.ps1`) | **41/41 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
@@ -135,7 +147,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\alpha-0.3.6\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\alpha-0.4.0\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -155,6 +167,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Soglia di scansione: default 24 ore, mapping opzioni, persistenza/ricaricamento, fallback, esclusione/inclusione file, wiring GUI→scanner, nessun auto-scan, non retroattività, conferma | `ScanThresholdTests` |
 | Riepilogo di scansione e conteggi (scartati/esclusi dalla soglia, selezionati, report coerente) | `ScanSummaryTests` |
 | Informazioni e impostazioni: finestra modale, versione, testo privacy, menu ⚙, spunta conservazione report, persistenza KeepReports, default/valori non validi, report su richiesta, errori di salvataggio, nessuna cancellazione retroattiva | `InfoSettingsTests` |
+| Cartelle vuote 0.4.0: candidatura post-order in sola lettura, radice mai rimossa, junction non seguite né rimosse, race contenuto/junction, ACL, annullamento, invalidi/esterni, integrazione report, persistenza RemoveEmptyFolders, flussi GUI OFF/ON/conferma rifiutata | `EmptyFolderCleanerTests` |
 | Tema chiaro/scuro: rilevamento con seam, palette centralizzata (chiaro = colori di sistema, scuro = antracite fisso ad alto contrasto), applicazione/ripristino su `MainForm`, aggiornamento live `WM_THEMECHANGED`/`WM_SETTINGCHANGE`/`ImmersiveColorSet`, fallback chiaro su eccezione, nessun colore hardcoded fuori dalla palette, dialogo Informazioni, etichetta report | `ThemeTests` |
 
 I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il

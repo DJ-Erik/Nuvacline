@@ -2,6 +2,56 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.4.0] — 2026-10-14
+
+Rimozione prudente delle cartelle vuote residue sotto la radice temporanea, come fase
+opzionale e separata dalla pulizia dei file. Il comportamento predefinito resta quello
+della 0.3.6: **nessuna cartella viene toccata** finché l'utente non attiva
+esplicitamente l'opzione e non conferma il conteggio delle candidate.
+
+### Aggiunto
+
+- **Fase cartelle vuote** (`EmptyFolderCleaner`): dopo una pulizia confermata e non
+  annullata, con l'opzione attiva viene eseguito un **sondaggio in sola lettura**
+  (candidatura: nessun file diretto + tutti i discendenti candidati; i reparse point
+  disqualificano il padre) seguito da una **conferma dedicata** con il numero reale di
+  candidate (default **No**). La rimozione è **post-order**, mai ricorsiva
+  (`Directory.Delete(path, false)`), con re-verifica immediata prima di ogni azione
+  (esistenza, attributi, reparse, enumerazione vuota). La **radice non viene mai
+  rimossa**; junction/symlink non vengono mai seguiti né cancellati.
+- **Modelli dedicati**: enum `EmptyDirectoryOutcome` (`Removed`, `SkippedNotFound`,
+  `SkippedNotEmpty`, `SkippedReparse`, `SkippedOutsideRoot`, `SkippedRoot`,
+  `SkippedInvalidPath`, `SkippedCancelled`, `Failed`) e classi `EmptyFolderSurvey` /
+  `EmptyCleanResult`; `CleanResult` dei file **invariata**.
+- **Impostazione** `RemoveEmptyFolders` nel menu ⚙, **disattivata di default**,
+  persistita in `settings.txt` con chiave indipendente (fallback spento se mancante o
+  non valida).
+- **Report e riepilogo**: sezione "Cartelle vuote" (righe TXT `Cartelle vuote
+  rimosse/saltate`, chiavi JSON `cartelleVuoteRimosse`/`Saltate`/`Errori`/`Annullata`)
+  **emessa solo se la fase è stata davvero eseguita**: con l'opzione spenta il report
+  è byte-identico alla 0.3.6.
+- **22 nuovi test** `EmptyFolderCleanerTests` (candidatura, post-order, radice,
+  traversal, invalidi, reparse, race contenuto/junction, ACL, annullamento,
+  integrazione scansione→pulizia→cartelle→report, persistenza, wiring GUI con conferma
+  dedicata e flussi completi OFF/ON/rifiuto). Suite 159 → **181**.
+
+### Aggiornato
+
+- Versione ufficiale del prodotto portata da `0.3.6` a `0.4.0`:
+  `AssemblyVersion`/`AssemblyFileVersion` `0.4.0.0`, `AssemblyInformationalVersion`
+  `0.4.0`, identità e descrizione del manifest, documentazione, test di versione e
+  verifica.
+- Percorso del pacchetto portable: `artifacts/alpha-0.4.0/`.
+- `InfoSettingsTests`: versione canonica 0.4.0, menu ⚙ a **4** voci (nuova voce
+  cartelle vuote), seam di caricamento/salvataggio estese.
+
+### Note
+
+- Cambio di contratto **minor**: "rimuove file" → "rimuove file e, su richiesta
+  esplicita, cartelle diventate vuote". Nessuna azione distruttiva nuova senza
+  doppia conferma (opzione + conteggio candidati).
+- `alpha-0.3`, `alpha-0.3.5`, `alpha-0.3.6` restano intatti.
+
 ## [0.3.6] — 2026-10-13
 
 Pulizia post-audit. Completa il conteggio delle cartelle esplorate durante l'analisi,

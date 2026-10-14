@@ -1,4 +1,4 @@
-# TASKS — CleanSlate 0.3.6
+# TASKS — CleanSlate 0.4.0
 
 Checklist operativa. Ogni voce riporta lo **stato reale** verificato, non l'intenzione.
 
@@ -343,6 +343,54 @@ Sessione di riesecuzione non interattiva sul commit `c1d0c4f` (albero pulito).
   `powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1`, attendere 159/159.
 - [ ] **0.4.0**: in attesa di autorizzazione esplicita; nessuna implementazione avviata
       (`SPEC-0.4.0.md` è documentazione di progetto, non codice).
+
+---
+
+## FASE 16 — Rimozione prudente delle cartelle vuote (0.4.0, 2026-10-14)
+
+Implementazione autorizzata dall'utente (2026-10-14) secondo `SPEC-0.4.0.md` e le
+decisioni vincolanti (default OFF, conferma dedicata con conteggio candidati,
+solo `%TEMP%` validato, mai la radice, mai reparse, mai `Directory.Delete` ricorsivo).
+
+### Implementazione
+
+- [x] `Core/EmptyFolderCleaner.cs` (nuovo): `Survey` in sola lettura (candidatura
+      post-order con propagazione verso l'alto: nessun file diretto + tutti i discendenti
+      candidati; reparse disqualifica e registra `SkippedReparse`) e `Remove` con
+      re-verifica immediata per ogni candidato (`ProcessOne`).
+- [x] `Core/CleanModels.cs`: enum `EmptyDirectoryOutcome` (9 valori), classi
+      `EmptyDirectoryItemResult`, `EmptyFolderSurvey`, `EmptyCleanResult`;
+      `CleanResult` dei file **invariata**.
+- [x] `Core/ScanSettings.cs`: chiave `RemoveEmptyFolders` (default **disattivata**),
+      load/save con fallback spento, indipendente da `MinAgeHours`/`KeepReports`.
+- [x] `Core/ReportBuilder.cs`: overload con `EmptyCleanResult`, note gated, durata
+      inclusa, nota versione 0.4.0.
+- [x] `Core/ReportExporter.cs`: righe TXT e chiavi JSON emesse **solo** se la fase è
+      stata davvero eseguita (con l'opzione spenta l'uscita è identica alla 0.3.6).
+- [x] `UI/MainForm.cs`: wiring completo (menu ⚙ 4ª voce, `OnRemoveEmptyFoldersClick`,
+      `RunEmptyFolderPhaseAsync` con sondaggio→conferma dedicata→rimozione,
+      `BuildEmptyFolderQuestion`, `BuildCleanSummaryText` statico, `GenerateReport`
+      esteso, seam `_confirmClean`/`_confirmRemoveEmptyFolders`/`_getAuthorizedRoot`/
+      `_showMessage`/`_loadRemoveEmptyFolders`/`_saveRemoveEmptyFolders`).
+- [x] `src/CleanSlate.Tests/EmptyFolderCleanerTests.cs` (nuovo): **22 test** coprenti
+      tutti i punti del §5 della specifica (candidatura, post-order, radice, traversal,
+      invalidi, reparse, race contenuto/junction, ACL, annullamento, integrazione
+      report, persistenza, flussi GUI OFF/ON/conferma rifiutata).
+
+### Verifiche
+
+- [x] Suite di test: **181/181** nella sessione sbloccata; in sessione bloccata
+      residuano **fallimenti ambientali flaky** dei 5 `RowContextMenuTests` clipboard
+      (non modificati, non saltati, non dichiarati superati — vedi FASE 15).
+- [x] `PrivacyTests` invariati e superati (nessuna API vietata introdotta).
+- [x] Bump versione 0.4.0 (AssemblyInfo, manifest, AppInfo, build.ps1, verify.ps1,
+      qa-practical, docs).
+- [x] Verifica end-to-end `verify.ps1` sull'exe del pacchetto 0.4.0: **41/41**.
+- [x] Pacchetto `artifacts/alpha-0.4.0/` con SHA256SUMS; `alpha-0.3`, `alpha-0.3.5`,
+      `alpha-0.3.6` intatti (hash confermati).
+- [ ] Commit locale della release; **nessun push**.
+
+SHA-256 exe 0.4.0: `721cddfd2f34d93affdee8eda829941c1f834781e8c01532e9508a9446999cb0`
 
 ---
 

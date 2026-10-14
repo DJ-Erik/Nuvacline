@@ -35,17 +35,17 @@ namespace CleanSlate.Core
 
     /// <summary>
     /// Impostazioni locali di CleanSlate: soglia d'età minima dei file proposti dalla
-    /// scansione e conservazione dei report generati.
+    /// scansione, conservazione dei report generati e rimozione delle cartelle vuote.
     ///
     /// Persistenza: un singolo file di testo in
-    /// %LOCALAPPDATA%\CleanSlate\settings.txt con le righe "MinAgeHours=&lt;ore&gt;" e
-    /// "KeepReports=&lt;0|1&gt;". Le chiavi sono indipendenti: la scrittura di una
-    /// preserva tutte le altre.
+    /// %LOCALAPPDATA%\CleanSlate\settings.txt con le righe "MinAgeHours=&lt;ore&gt;",
+    /// "KeepReports=&lt;0|1&gt;" e "RemoveEmptyFolders=&lt;0|1&gt;". Le chiavi sono
+    /// indipendenti: la scrittura di una preserva tutte le altre.
     /// Nessuna dipendenza esterna, nessuna rete, nessun registro di Windows.
     ///
-    /// Tutte le letture falliscono in modo sicuro sui valori predefiniti (24 ore e
-    /// conservazione attiva): file mancante, corrotto, non leggibile o con valore
-    /// non previsto.
+    /// Tutte le letture falliscono in modo sicuro sui valori predefiniti (24 ore,
+    /// conservazione attiva e rimozione cartelle vuote disattivata): file mancante,
+    /// corrotto, non leggibile o con valore non previsto.
     /// </summary>
     public static class ScanSettings
     {
@@ -54,8 +54,15 @@ namespace CleanSlate.Core
         /// <summary>Conservazione dei report attiva finché l'utente non la disattiva.</summary>
         public const bool DefaultKeepReports = true;
 
+        /// <summary>
+        /// Rimozione delle cartelle vuote disattivata finché l'utente non la attiva:
+        /// il comportamento predefinito resta quello della 0.3.6 (solo file).
+        /// </summary>
+        public const bool DefaultRemoveEmptyFolders = false;
+
         private const string KeyMinAgeHours = "MinAgeHours";
         private const string KeyKeepReports = "KeepReports";
+        private const string KeyRemoveEmptyFolders = "RemoveEmptyFolders";
 
         /// <summary>Opzioni disponibili, in ordine di visualizzazione.</summary>
         public static ScanThresholdOption[] CreateOptions()
@@ -233,6 +240,70 @@ namespace CleanSlate.Core
         public static bool SaveKeepReportsTo(string path, bool keepReports)
         {
             return WriteSetting(path, KeyKeepReports, keepReports ? "1" : "0");
+        }
+
+        /// <summary>Carica la rimozione delle cartelle vuote dal percorso predefinito.</summary>
+        public static bool LoadRemoveEmptyFolders()
+        {
+            return LoadRemoveEmptyFoldersFrom(SettingsPath);
+        }
+
+        /// <summary>
+        /// Carica la rimozione delle cartelle vuote dal percorso indicato. Qualsiasi
+        /// problema (file assente, riga malformata, valore non valido, errori di I/O)
+        /// produce il valore predefinito: rimozione disattivata. A differenza della
+        /// conservazione dei report, il fallback è spento: l'azione distruttiva nuova
+        /// deve essere scelta esplicitamente dall'utente.
+        /// </summary>
+        public static bool LoadRemoveEmptyFoldersFrom(string path)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                    return DefaultRemoveEmptyFolders;
+
+                string[] lines = File.ReadAllLines(path);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string line = lines[i].Trim();
+                    if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) continue;
+
+                    int separator = line.IndexOf('=');
+                    if (separator <= 0) continue;
+
+                    string key = line.Substring(0, separator).Trim();
+                    string value = line.Substring(separator + 1).Trim();
+                    if (!string.Equals(key, KeyRemoveEmptyFolders, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    if (string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+                        return true;
+
+                    // Valore presente ma non valido: fallback sulla disattivazione.
+                    return false;
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (SecurityException) { }
+
+            return DefaultRemoveEmptyFolders;
+        }
+
+        /// <summary>Salva la rimozione delle cartelle vuote nel percorso predefinito.</summary>
+        public static bool SaveRemoveEmptyFolders(bool removeEmptyFolders)
+        {
+            return SaveRemoveEmptyFoldersTo(SettingsPath, removeEmptyFolders);
+        }
+
+        /// <summary>
+        /// Salva la rimozione delle cartelle vuote nel percorso indicato, preservando
+        /// le altre chiavi già presenti nel file. Restituisce false se la scrittura
+        /// non riesce.
+        /// </summary>
+        public static bool SaveRemoveEmptyFoldersTo(string path, bool removeEmptyFolders)
+        {
+            return WriteSetting(path, KeyRemoveEmptyFolders, removeEmptyFolders ? "1" : "0");
         }
 
         /// <summary>

@@ -1,6 +1,6 @@
 # Sicurezza di CleanSlate
 
-Documento relativo alla versione **0.3.6**.
+Documento relativo alla versione **0.4.0**.
 
 ## Modello di minaccia
 
@@ -30,12 +30,24 @@ Di conseguenza le difese sono concentrate sul lato della cancellazione.
 - I collegamenti fisici e i reparse point non vengono seguiti: se un percorso contiene un
   componente di reparse point, la cartella viene saltata.
 
-### 3. Nessuna cancellazione di directory
+### 3. Cancellazione di directory solo su richiesta esplicita (0.4.0)
 
-- Il motore di cancellazione **non contiene codice che cancelli directory**: opera solo su
-  singoli file.
+- Il motore di cancellazione dei **file** opera solo su singoli file (invariato dalla 0.3.6).
+- La 0.4.0 aggiunge una fase **opzionale e disattivata di default** (`EmptyFolderCleaner`)
+  che rimuove **solo cartelle diventate vuote** sotto la radice autorizzata, e solo dopo
+  una **conferma dedicata** che riporta il numero reale di candidate (default **No**).
+- Con l'opzione spenta (default) **nessuna cartella viene toccata** e il report è
+  byte-identico alla 0.3.6.
 - Non viene usato alcun comando shell o PowerShell per le cancellazioni.
-- Nessuna cancellazione ricorsiva.
+- Nessuna cancellazione ricorsiva: `Directory.Delete(path, false)` su ogni singola
+  cartella vuota, in ordine post-order (figlie prima dei padri).
+- La **radice non viene mai rimossa**, né in caso normale né con item corrotti.
+- I reparse point (junction, symlink, mount point) **non vengono mai seguiti né
+  rimossi**: la cartella collegamento è saltata e registrata come `SkippedReparse`.
+- Prima di ogni cancellazione di cartella viene re-verificato: normalizzazione,
+  containment, attributi, assenza di reparse, enumerazione vuota. Se uno qualsiasi dei
+  controlli fallisce la cartella viene **conservata e l'esito registrato**, senza
+  interrompere le successive.
 
 ### 4. Verifica per ogni singolo file
 
@@ -163,7 +175,7 @@ vedi "Rischi residui dichiarati" punto 6.
 Progetto alpha locale, senza canale pubblico dedicato. Per segnalare un problema aprire un
 issue indicando:
 
-- versione (`CleanSlate 0.3.6`);
+- versione (`CleanSlate 0.4.0`);
 - passi per riprodurre;
 - percorso interessato (senza dati personali);
 - cosa ci si aspettava e cosa è successo.

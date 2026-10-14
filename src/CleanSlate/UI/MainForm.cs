@@ -23,6 +23,7 @@ namespace CleanSlate.UI
 
         private readonly TempFolderScanner _scanner = new TempFolderScanner();
         private readonly TempFileCleaner _cleaner = new TempFileCleaner();
+        private readonly EmptyFolderCleaner _folderCleaner = new EmptyFolderCleaner();
 
         private Label _titleLabel;
         private Button _btnAnalyze;
@@ -51,6 +52,7 @@ namespace CleanSlate.UI
         private int _lastProgressTick;
         private ScanResult _lastScan;
         private CleanResult _lastClean;
+        private EmptyCleanResult _lastEmptyClean;
         private string _currentRoot;
         private string _lastReportPath;
         private ScanThresholdOption _currentThreshold;
@@ -61,9 +63,11 @@ namespace CleanSlate.UI
         private bool[] _rowMenuCheckSnapshot;
         private ContextMenuStrip _settingsMenu;
         private ToolStripMenuItem _miKeepReports;
+        private ToolStripMenuItem _miRemoveEmptyFolders;
         private ToolStripSeparator _settingsSeparator;
         private ToolStripMenuItem _miOpenReportsFolder;
         private bool _keepReports = ScanSettings.DefaultKeepReports;
+        private bool _removeEmptyFolders = ScanSettings.DefaultRemoveEmptyFolders;
         private Action<string> _notifyUser;
         private Action<string> _setClipboard;
         private Action<ProcessStartInfo> _startProcess;
@@ -71,9 +75,15 @@ namespace CleanSlate.UI
         private Action<int> _saveSettings;
         private Func<bool> _loadKeepReports;
         private Func<bool, bool> _saveKeepReports;
+        private Func<bool> _loadRemoveEmptyFolders;
+        private Func<bool, bool> _saveRemoveEmptyFolders;
         private Func<string> _reportsFolder;
         private Action _showInfoDialog;
         private Func<AppTheme> _detectTheme;
+        private Func<string, bool> _confirmClean;
+        private Func<int, bool> _confirmRemoveEmptyFolders;
+        private Func<TempPathResult> _getAuthorizedRoot;
+        private Func<string, string, MessageBoxIcon, bool> _showMessage;
         private ThemePalette _palette = ThemePalette.For(AppTheme.Light);
         private AppTheme _currentTheme = AppTheme.Light;
 
@@ -90,12 +100,33 @@ namespace CleanSlate.UI
             _saveSettings = delegate(int hours) { ScanSettings.Save(hours); };
             _loadKeepReports = delegate { return ScanSettings.LoadKeepReports(); };
             _saveKeepReports = delegate(bool keep) { return ScanSettings.SaveKeepReports(keep); };
+            _loadRemoveEmptyFolders = delegate { return ScanSettings.LoadRemoveEmptyFolders(); };
+            _saveRemoveEmptyFolders = delegate(bool remove) { return ScanSettings.SaveRemoveEmptyFolders(remove); };
             _reportsFolder = delegate { return ReportsFolderDefault(); };
             _showInfoDialog = delegate { ShowInfoDialog(); };
             _detectTheme = delegate { return WindowsTheme.Detect(); };
+            _getAuthorizedRoot = delegate { return TempPathProvider.GetAuthorizedRoot(); };
+            // I dialoghi di conferma restano reali (default identico alla 0.3.6):
+            // i test li sostituiscono con seam deterministici, mai con timeout.
+            _confirmClean = delegate(string question)
+            {
+                return MessageBox.Show(this, question, "Conferma pulizia",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+            };
+            _confirmRemoveEmptyFolders = delegate(int candidateCount)
+            {
+                return MessageBox.Show(this, BuildEmptyFolderQuestion(candidateCount), "Conferma cartelle vuote",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+            };
+            _showMessage = delegate(string messageText, string title, MessageBoxIcon icon)
+            {
+                MessageBox.Show(this, messageText, title, MessageBoxButtons.OK, icon);
+                return true;
+            };
             ApplyTheme();
             LoadThresholdSetting();
             LoadKeepReportsSetting();
+            LoadRemoveEmptyFoldersSetting();
             UpdateSummaryLabel();
             UpdateReportLabel();
             UpdateSelectionState();
@@ -470,7 +501,8 @@ namespace CleanSlate.UI
 
         private void ShowMessageOwner(string text, string title, MessageBoxIcon icon)
         {
-            MessageBox.Show(this, text, title, MessageBoxButtons.OK, icon);
+            if (_showMessage != null) _showMessage(text, title, icon);
+            else MessageBox.Show(this, text, title, MessageBoxButtons.OK, icon);
         }
 
         #endregion
@@ -481,7 +513,9 @@ namespace CleanSlate.UI
         {
             if (_busy) return;
 
-            TempPathResult path = TempPathProvider.GetAuthorizedRoot();
+            TempPathResult path = _getAuthorizedRoot != null
+                ? _getAuthorizedRoot()
+                : TempPathProvider.GetAuthorizedRoot();
             if (!path.Success)
             {
                 SetStatus("Analisi non riuscita.");
@@ -495,6 +529,7 @@ namespace CleanSlate.UI
             _currentRoot = path.Root;
             _lastScan = null;
             _lastClean = null;
+            _lastEmptyClean = null;
             _lastReportPath = null;
             UpdateReportLabel();
             PopulateGrid(null);
@@ -656,6 +691,22 @@ namespace CleanSlate.UI
                 ByteFormatter.Format(bytes));
         }
 
+        /// <summary>
+        /// Domanda della conferma dedicata (e separata da quella dei file) per la
+        /// rimozione delle cartelle vuote. Il conteggio deriva dal sondaggio in sola
+        /// lettura eseguito subito prima: l'utente decide su un'anteprima reale.
+        /// </summary>
+        private string BuildEmptyFolderQuestion(int candidateCount)
+        {
+            return string.Format(
+                "Rimuovere {0} cartelle rimaste vuote sotto la cartella temporanea?\r\n\r\n"
+                + "Vengono toccate solo cartelle vuote già presenti sotto la radice: la radice "
+                + "non viene mai eliminata e i collegamenti (junction o simbolici) non vengono "
+                + "seguiti né rimossi. I file eliminati in questa pulizia non c'entrano: questa "
+                + "è una fase separata e facoltativa.\r\n\r\nVuole continuare?",
+                candidateCount);
+        }
+
         private async void OnCleanClick(object sender, EventArgs e)
         {
             if (_busy) return;
@@ -663,7 +714,9 @@ namespace CleanSlate.UI
             List<FileItem> selected = GetSelectedItems();
             if (selected.Count == 0) return;
 
-            TempPathResult path = TempPathProvider.GetAuthorizedRoot();
+            TempPathResult path = _getAuthorizedRoot != null
+                ? _getAuthorizedRoot()
+                : TempPathProvider.GetAuthorizedRoot();
             if (!path.Success)
             {
                 ShowMessageOwner(path.ErrorMessage, "CleanSlate", MessageBoxIcon.Error);
@@ -681,10 +734,11 @@ namespace CleanSlate.UI
 
             string question = BuildCleanQuestion(selected);
 
-            DialogResult confirmation = MessageBox.Show(
-                this, question, "Conferma pulizia",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
-            if (confirmation != DialogResult.Yes) return;
+            bool confirmed = _confirmClean != null
+                ? _confirmClean(question)
+                : MessageBox.Show(this, question, "Conferma pulizia",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
+            if (!confirmed) return;
 
             CancellationTokenSource cts = new CancellationTokenSource();
             _cts = cts;
@@ -711,7 +765,19 @@ namespace CleanSlate.UI
                 CleanResult result = await Task.Run(() => _cleaner.Clean(options));
                 _lastClean = result;
                 ApplyCleanResult(result);
-                SetStatus(result.Cancelled ? "Pulizia annullata." : "Pulizia completata.");
+
+                // Fase opzionale delle cartelle vuote: solo con l'opzione attiva e solo
+                // dopo una pulizia non annullata. Con l'opzione disattivata (default)
+                // nessuna cartella viene toccata e il report resta quello della 0.3.6.
+                _lastEmptyClean = null;
+                if (!result.Cancelled && _removeEmptyFolders)
+                    _lastEmptyClean = await RunEmptyFolderPhaseAsync(cts.Token);
+
+                bool folderCancelled = _lastEmptyClean != null && _lastEmptyClean.Cancelled;
+                if (result.Cancelled || folderCancelled)
+                    SetStatus("Pulizia annullata.");
+                else
+                    SetStatus("Pulizia completata.");
                 ShowCleanSummary(result);
             }
             catch (Exception ex)
@@ -728,6 +794,77 @@ namespace CleanSlate.UI
                 SetBusy(false);
                 UpdateSummaryLabel();
                 if (_lastClean != null) GenerateReport(false);
+            }
+        }
+
+        /// <summary>
+        /// Fase opzionale (sempre separata dalla pulizia dei file): sondaggio in sola
+        /// lettura delle cartelle vuote, conferma dedicata con il conteggio, quindi
+        /// rimozione prudente. Restituisce null quando non c'è nulla da fare o
+        /// l'utente ha rifiutato la conferma: in quel caso nessuna cartella viene
+        /// toccata e nessuna voce di report viene aggiunta.
+        /// </summary>
+        private async Task<EmptyCleanResult> RunEmptyFolderPhaseAsync(CancellationToken token)
+        {
+            try
+            {
+                TempPathResult path = _getAuthorizedRoot != null
+                    ? _getAuthorizedRoot()
+                    : TempPathProvider.GetAuthorizedRoot();
+                if (!path.Success
+                    || string.IsNullOrEmpty(_currentRoot)
+                    || !string.Equals(path.Root, _currentRoot, StringComparison.OrdinalIgnoreCase))
+                {
+                    EmptyCleanResult failed = new EmptyCleanResult();
+                    failed.ErrorMessage =
+                        "La cartella dei file temporanei è cambiata: la rimozione delle cartelle vuote non è stata eseguita.";
+                    return failed;
+                }
+
+                SetStatus("Ricerca delle cartelle vuote in corso...");
+                _progress.Style = ProgressBarStyle.Marquee;
+                _progress.MarqueeAnimationSpeed = 30;
+
+                EmptyFolderSurvey survey = await Task.Run(() => _folderCleaner.Survey(path.Root, token));
+
+                if (survey.Cancelled)
+                {
+                    EmptyCleanResult cancelled = new EmptyCleanResult();
+                    cancelled.Success = true;
+                    cancelled.Cancelled = true;
+                    cancelled.Root = survey.Root;
+                    return cancelled;
+                }
+                if (!survey.Success)
+                {
+                    EmptyCleanResult failed = new EmptyCleanResult();
+                    failed.ErrorMessage = string.IsNullOrEmpty(survey.ErrorMessage)
+                        ? "Il sondaggio delle cartelle vuote non è stato completato."
+                        : survey.ErrorMessage;
+                    return failed;
+                }
+                if (survey.Candidates.Count == 0) return null;
+
+                // Conferma dedicata ed esplicita, con il conteggio reale delle candidate.
+                // Se il seam non è disponibile non viene eseguita alcuna rimozione
+                // (fail-closed: mai cancellare senza conferma).
+                if (_confirmRemoveEmptyFolders == null) return null;
+                if (!_confirmRemoveEmptyFolders(survey.Candidates.Count)) return null;
+
+                SetStatus("Rimozione delle cartelle vuote in corso...");
+                return await Task.Run(() => _folderCleaner.Remove(path.Root, survey.Candidates, token));
+            }
+            catch (Exception ex)
+            {
+                EmptyCleanResult failed = new EmptyCleanResult();
+                failed.ErrorMessage = ex.Message;
+                return failed;
+            }
+            finally
+            {
+                _progress.Style = ProgressBarStyle.Blocks;
+                _progress.MarqueeAnimationSpeed = 0;
+                _progress.Value = 0;
             }
         }
 
@@ -792,6 +929,17 @@ namespace CleanSlate.UI
 
         private void ShowCleanSummary(CleanResult result)
         {
+            ShowMessageOwner(BuildCleanSummaryText(result, _lastEmptyClean),
+                "CleanSlate", MessageBoxIcon.Information);
+        }
+
+        /// <summary>
+        /// Testo del riepilogo di pulizia, incluso la sezione della fase cartelle vuote
+        /// quando la fase è stata eseguita. Metodo puro: con <paramref name="emptyFolders"/>
+        /// null il testo è identico alla 0.3.6.
+        /// </summary>
+        private static string BuildCleanSummaryText(CleanResult result, EmptyCleanResult emptyFolders)
+        {
             string header = result.Cancelled
                 ? "Pulizia annullata prima del termine."
                 : "Pulizia completata.";
@@ -822,7 +970,37 @@ namespace CleanSlate.UI
             if (result.SkippedCount > 0)
                 text += "\r\n\r\nGli elementi saltati non sono stati modificati.";
 
-            ShowMessageOwner(text, "CleanSlate", MessageBoxIcon.Information);
+            if (emptyFolders != null)
+            {
+                text += "\r\n\r\nCartelle vuote (fase separata e facoltativa):"
+                    + "\r\nRimosse: " + emptyFolders.RemovedCount
+                    + "\r\nSaltate: " + emptyFolders.SkippedCount
+                    + "\r\nErrori: " + emptyFolders.ErrorCount;
+
+                if (emptyFolders.Cancelled)
+                    text += "\r\nEsito: rimozione cartelle vuote annullata.";
+                if (!string.IsNullOrEmpty(emptyFolders.ErrorMessage))
+                    text += "\r\nErrore della fase cartelle: " + emptyFolders.ErrorMessage;
+
+                if (emptyFolders.ErrorCount > 0)
+                {
+                    int shown = 0;
+                    string details = string.Empty;
+                    for (int i = 0; i < emptyFolders.Items.Count && shown < 6; i++)
+                    {
+                        EmptyDirectoryItemResult item = emptyFolders.Items[i];
+                        if (item.Outcome != EmptyDirectoryOutcome.Failed) continue;
+                        details += "\r\n- " + item.Name + ": " + item.Message;
+                        shown++;
+                    }
+                    if (details.Length > 0) text += "\r\n\r\nDettaglio degli errori (cartelle):" + details;
+                }
+
+                if (emptyFolders.SkippedCount > 0)
+                    text += "\r\n\r\nLe cartelle saltate non sono state modificate.";
+            }
+
+            return text;
         }
 
         private List<FileItem> GetSelectedItems()
@@ -914,7 +1092,7 @@ namespace CleanSlate.UI
                     suffix++;
                 }
 
-                ReportData data = ReportBuilder.Build(_lastScan, _lastClean, _currentRoot);
+                ReportData data = ReportBuilder.Build(_lastScan, _lastClean, _lastEmptyClean, _currentRoot);
                 if (_lastScan != null)
                 {
                     data.MinAgeText = FormatThreshold(_lastScanMinAge);
@@ -1010,6 +1188,27 @@ namespace CleanSlate.UI
             UpdateReportLabel();
         }
 
+        /// <summary>
+        /// Carica la preferenza di rimozione delle cartelle vuote tramite il seam
+        /// dedicato, così i test non toccano mai il file reale dell'utente. Qualsiasi
+        /// errore ricade sul valore predefinito: rimozione disattivata.
+        /// </summary>
+        private void LoadRemoveEmptyFoldersSetting()
+        {
+            bool remove = ScanSettings.DefaultRemoveEmptyFolders;
+            try
+            {
+                if (_loadRemoveEmptyFolders != null) remove = _loadRemoveEmptyFolders();
+            }
+            catch (Exception)
+            {
+                remove = ScanSettings.DefaultRemoveEmptyFolders;
+            }
+
+            _removeEmptyFolders = remove;
+            if (_miRemoveEmptyFolders != null) _miRemoveEmptyFolders.Checked = remove;
+        }
+
         private void OnInfoClick(object sender, EventArgs e)
         {
             if (_showInfoDialog != null) _showInfoDialog();
@@ -1089,7 +1288,12 @@ namespace CleanSlate.UI
                 + "Funzionamento\r\n"
                 + "Analisi, filtro temporale, anteprima dei risultati, selezione riga per riga e "
                 + "conferma prima di ogni pulizia. Il report locale viene scritto nella cartella "
-                + "dei report solo se la conservazione è attiva oppure su richiesta.\r\n\r\n"
+                + "dei report solo se la conservazione è attiva oppure su richiesta. Inoltre, "
+                + "se l'opzione «Rimuovi anche le cartelle diventate vuote» del menu "
+                + "impostazioni è attiva (disattivata di default), al termine di una pulizia "
+                + "confermata viene chiesta una conferma separata per rimuovere le sole "
+                + "cartelle rimaste vuote sotto la cartella temporanea: la radice non viene "
+                + "mai eliminata e i collegamenti non vengono toccati.\r\n\r\n"
                 + "Avvertenza\r\n"
                 + "I file eliminati non sono recuperabili.";
         }
@@ -1109,6 +1313,18 @@ namespace CleanSlate.UI
                 + "ne genera uno su richiesta.";
             _miKeepReports.Click += OnKeepReportsClick;
 
+            _miRemoveEmptyFolders = new ToolStripMenuItem("Rimuovi anche le cartelle diventate vuote");
+            _miRemoveEmptyFolders.Name = "miRemoveEmptyFolders";
+            _miRemoveEmptyFolders.CheckOnClick = true;
+            _miRemoveEmptyFolders.Checked = _removeEmptyFolders;
+            _miRemoveEmptyFolders.ToolTipText =
+                "Se attiva, al termine di una pulizia confermata e non annullata CleanSlate "
+                + "esegue un sondaggio in sola lettura, chiede una conferma separata con il "
+                + "conteggio delle cartelle vuote e le rimuove sotto la cartella temporanea. "
+                + "La radice non viene mai eliminata e i collegamenti non vengono toccati. "
+                + "Disattivata di default.";
+            _miRemoveEmptyFolders.Click += OnRemoveEmptyFoldersClick;
+
             _settingsSeparator = new ToolStripSeparator();
             _settingsSeparator.Name = "sepSettingsReports";
 
@@ -1117,6 +1333,7 @@ namespace CleanSlate.UI
             _miOpenReportsFolder.Click += OnOpenReportsFolderClick;
 
             _settingsMenu.Items.Add(_miKeepReports);
+            _settingsMenu.Items.Add(_miRemoveEmptyFolders);
             _settingsMenu.Items.Add(_settingsSeparator);
             _settingsMenu.Items.Add(_miOpenReportsFolder);
         }
@@ -1129,6 +1346,7 @@ namespace CleanSlate.UI
         private void RefreshSettingsMenu()
         {
             if (_miKeepReports != null) _miKeepReports.Checked = _keepReports;
+            if (_miRemoveEmptyFolders != null) _miRemoveEmptyFolders.Checked = _removeEmptyFolders;
 
             bool folderExists = ReportsFolderExists();
             if (_miOpenReportsFolder != null)
@@ -1174,6 +1392,34 @@ namespace CleanSlate.UI
             // e l'utente viene informato. Nessun cambio di stato silenzioso.
             _miKeepReports.Checked = !requested;
             NotifyUser("Impossibile salvare la preferenza per la conservazione dei report.");
+        }
+
+        private void OnRemoveEmptyFoldersClick(object sender, EventArgs e)
+        {
+            if (_miRemoveEmptyFolders == null) return;
+
+            // CheckOnClick ha già commutato la spunta: questo è il valore richiesto.
+            bool requested = _miRemoveEmptyFolders.Checked;
+            bool saved = false;
+            try
+            {
+                if (_saveRemoveEmptyFolders != null) saved = _saveRemoveEmptyFolders(requested);
+            }
+            catch (Exception)
+            {
+                saved = false;
+            }
+
+            if (saved)
+            {
+                _removeEmptyFolders = requested;
+                return;
+            }
+
+            // Salvataggio non riuscito: la spunta viene riportata al valore effettivo
+            // e l'utente viene informato. Nessun cambio di stato silenzioso.
+            _miRemoveEmptyFolders.Checked = !requested;
+            NotifyUser("Impossibile salvare la preferenza per la rimozione delle cartelle vuote.");
         }
 
         private void OnOpenReportsFolderClick(object sender, EventArgs e)

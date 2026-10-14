@@ -1,6 +1,6 @@
 # Privacy di CleanSlate
 
-Documento relativo alla versione **0.3.6**.
+Documento relativo alla versione **0.4.0**.
 
 ## In una frase
 
@@ -76,7 +76,7 @@ Sull'artefatto destinato ai beta tester, non sui sorgenti:
 | Assembly referenziati (riflessione) | Solo `mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms` |
 | Tipi pubblici esportati | 22, tutti di CleanSlate |
 | Nomi di metadati di rete (`WebRequest`, `WebClient`, `Socket`, `Dns`, `HttpClient`, `TcpClient`, `UdpClient`, `ServicePoint`, `Ftp`, `Smtp`) | Nessuno, né in ASCII né in UTF-16 |
-| Nomi di metadati di registro (`RegistryKey`) | Nessuno: la 0.3.6 contiene la sola importazione P/Invoke `RegGetValue` (`advapi32.dll`, ASCII) per la lettura del tema, verificata sulle stringhe dell'exe; `Microsoft.Win32` e `RegistryKey` assenti sia in ASCII sia in UTF-16 |
+| Nomi di metadati di registro (`RegistryKey`) | Nessuno: la 0.4.0 contiene la sola importazione P/Invoke `RegGetValue` (`advapi32.dll`, ASCII) per la lettura del tema, verificata sulle stringhe dell'exe; `Microsoft.Win32` e `RegistryKey` assenti sia in ASCII sia in UTF-16 |
 | Stringhe `http://` presenti | 2, entrambe namespace XML del manifest incorporato (`schemas.microsoft.com/SMI/...`): identificativi, non indirizzi |
 | File di configurazione nel pacchetto | Nessuno (solo `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt`) |
 | Manifest incorporato | `requestedExecutionLevel level="asInvoker" uiAccess="false"` |

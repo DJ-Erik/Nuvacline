@@ -84,7 +84,16 @@ namespace CleanSlate.Core
                 sb.AppendLine("File saltati              : " + data.CleanSkipped);
                 sb.AppendLine("Errori                    : " + data.CleanErrors);
                 sb.AppendLine("Spazio stimato non recuperato: " + ByteFormatter.Format(data.EstimatedNotRecovered));
+                if (data.EmptyCleanAvailable)
+                {
+                    // Sezione emessa solo se la fase opzionale è stata davvero eseguita.
+                    sb.AppendLine("Cartelle vuote rimosse       : " + data.EmptyDirectoriesRemoved);
+                    sb.AppendLine("Cartelle vuote saltate       : " + data.EmptyDirectoriesSkipped);
+                    sb.AppendLine("Errori (cartelle vuote)      : " + data.EmptyDirectoriesErrors);
+                }
                 if (data.CleanCancelled) sb.AppendLine("Esito: pulizia annullata.");
+                if (data.EmptyCleanAvailable && data.EmptyCleanCancelled)
+                    sb.AppendLine("Esito: rimozione cartelle vuote annullata.");
             }
             sb.AppendLine();
 
@@ -149,6 +158,14 @@ namespace CleanSlate.Core
                 AppendNumber(sb, 2, "fileSaltati", data.CleanSkipped, true);
                 AppendNumber(sb, 2, "errori", data.CleanErrors, true);
                 AppendNumber(sb, 2, "spazioStimatoNonRecuperatoByte", data.EstimatedNotRecovered, true);
+                if (data.EmptyCleanAvailable)
+                {
+                    // Chiavi emesse solo se la fase opzionale è stata davvero eseguita.
+                    AppendNumber(sb, 2, "cartelleVuoteRimosse", data.EmptyDirectoriesRemoved, true);
+                    AppendNumber(sb, 2, "cartelleVuoteSaltate", data.EmptyDirectoriesSkipped, true);
+                    AppendNumber(sb, 2, "cartelleVuoteErrori", data.EmptyDirectoriesErrors, true);
+                    AppendBool(sb, 2, "cartelleVuoteAnnullata", data.EmptyCleanCancelled, true);
+                }
                 AppendBool(sb, 2, "annullata", data.CleanCancelled, false);
                 sb.Append("  },\n");
             }

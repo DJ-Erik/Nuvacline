@@ -90,4 +90,84 @@ namespace CleanSlate.Core
             get { return EstimatedBytes - DeletedBytes; }
         }
     }
+
+    /// <summary>Motivo per cui una cartella non è stata rimossa (o lo è stata).</summary>
+    public enum EmptyDirectoryOutcome
+    {
+        Removed = 0,
+        SkippedNotFound,
+        SkippedNotEmpty,
+        SkippedReparse,
+        SkippedOutsideRoot,
+        SkippedRoot,
+        SkippedInvalidPath,
+        SkippedCancelled,
+        Failed
+    }
+
+    /// <summary>Esito dell'operazione su una singola cartella.</summary>
+    public sealed class EmptyDirectoryItemResult
+    {
+        public string Name { get; set; }
+        public string FullPath { get; set; }
+        public EmptyDirectoryOutcome Outcome { get; set; }
+        public string Message { get; set; }
+    }
+
+    /// <summary>
+    /// Sondaggio in sola lettura delle cartelle vuote sotto la radice autorizzata.
+    /// Non viene eseguita alcuna cancellazione in questa fase: serve solo a proporre
+    /// le candidate alla conferma dedicata dell'utente.
+    /// </summary>
+    public sealed class EmptyFolderSurvey
+    {
+        public EmptyFolderSurvey()
+        {
+            Success = false;
+            Cancelled = false;
+            Candidates = new List<string>();
+            Items = new List<EmptyDirectoryItemResult>();
+        }
+
+        public bool Success { get; set; }
+        public bool Cancelled { get; set; }
+        public string Root { get; set; }
+        public string ErrorMessage { get; set; }
+
+        /// <summary>Numero di sottocartelle (esclusa la radice) effettivamente esaminate.</summary>
+        public int DirectoriesExamined { get; set; }
+
+        /// <summary>Percorsi assoluti vuoti e proposti, in ordine post-order (figlie prima dei padri).</summary>
+        public List<string> Candidates { get; set; }
+
+        /// <summary>Anomalie rilevate durante il sondaggio (reparse, errori di lettura).</summary>
+        public List<EmptyDirectoryItemResult> Items { get; set; }
+    }
+
+    /// <summary>
+    /// Riepilogo della fase opzionale di rimozione delle cartelle vuote.
+    /// Classe separata da <see cref="CleanResult"/>: quando l'opzione è disattivata
+    /// questa fase non esiste e la pulizia dei file resta identica alla 0.3.6.
+    /// </summary>
+    public sealed class EmptyCleanResult
+    {
+        public EmptyCleanResult()
+        {
+            Success = false;
+            Cancelled = false;
+            Items = new List<EmptyDirectoryItemResult>();
+        }
+
+        public bool Success { get; set; }
+        public bool Cancelled { get; set; }
+        public string Root { get; set; }
+        public string ErrorMessage { get; set; }
+
+        public int RemovedCount { get; set; }
+        public int SkippedCount { get; set; }
+        public int ErrorCount { get; set; }
+
+        public List<EmptyDirectoryItemResult> Items { get; set; }
+        public TimeSpan Duration { get; set; }
+    }
 }
