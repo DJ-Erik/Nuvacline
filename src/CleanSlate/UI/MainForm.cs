@@ -185,7 +185,8 @@ namespace CleanSlate.UI
             _btnSettings = CreateIconButton("btnSettings", "⚙", 898, 10, OnSettingsClick);
 
             _btnAnalyze = CreateButton("btnAnalyze", "Analizza", 14, 78, 110, OnAnalyzeClick);
-            _btnClean = CreateButton("btnClean", "Pulisci selezionati", 132, 78, 160, OnCleanClick);
+            _btnClean = CreateButton("btnClean", "PULISCI SELEZIONATI", 132, 78, 160, OnCleanClick);
+            _btnClean.Font = new Font(Font.FontFamily, Font.Size, FontStyle.Bold);
             _btnCancel = CreateButton("btnCancel", "Annulla", 300, 78, 100, OnCancelClick);
             _btnReport = CreateButton("btnReport", "Apri report", 408, 78, 120, OnReportClick);
 
