@@ -7,7 +7,7 @@ using System.Resources;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CleanSlate")]
-[assembly: AssemblyCopyright("Versione alpha per valutazione.")]
+[assembly: AssemblyCopyright("Copyright (C) 2026 DJ-Erik. Licenza GPL-3.0-or-later.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

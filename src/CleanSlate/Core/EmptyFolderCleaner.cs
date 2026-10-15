@@ -1,3 +1,6 @@
+// CleanSlate - Copyright (C) 2026 DJ-Erik
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Testo completo della licenza: file LICENSE alla root del repository.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

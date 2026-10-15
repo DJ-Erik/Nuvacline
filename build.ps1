@@ -100,13 +100,29 @@ I file SHA256SUMS.txt riportano l'impronta SHA-256 dei file di questa cartella.
 Verifica con:
   certutil -hashfile CleanSlate.exe SHA256
 
+LICENZA
+-------
+Codice sorgente: GNU General Public License v3.0 or later
+(GPL-3.0-or-later). Il testo integrale e' nel file LICENSE di
+questo pacchetto e nella root del repository sorgente.
+Identificatore SPDX: GPL-3.0-or-later.
+Il nome e il logo non sono concessi per uso di marchio dalla licenza.
+Il logo e' stato generato con strumenti di intelligenza artificiale:
+non viene rivendicata titolarita' di copyright sull'immagine.
+
+Sorgente corrispondente: repository Git del progetto, branch master,
+tag della versione rilasciata.
+
 DIPIENDENZE
 -----------
-Nessun componente di terze parti e' incluso. Vedere LICENSE.txt.
+Nessun componente di terze parti e' incluso. Vedere THIRD-PARTY.txt.
 "@
     Set-Content -LiteralPath (Join-Path $artifacts 'README.txt') -Value $readme -Encoding UTF8
 
-    $license = @"
+    # Testo integrale della licenza GNU GPL v3 dalla root del repository.
+    Copy-Item -LiteralPath (Join-Path $Root 'LICENSE') -Destination (Join-Path $artifacts 'LICENSE') -Force
+
+    $thirdParty = @"
 CleanSlate 0.4.5 - note su licenze e dipendenze
 ==================================================
 
@@ -125,8 +141,11 @@ Gli strumenti usati SOLO per la compilazione (csc.exe in-box di
 
 I file di questa cartella non contengono codice di terze parti,
 pubblicita, telemetria o risorse scaricate da Internet.
+
+La licenza del codice sorgente di CleanSlate e' la GNU GPL-3.0-or-later:
+vedere il file LICENSE di questa cartella.
 "@
-    Set-Content -LiteralPath (Join-Path $artifacts 'LICENSE.txt') -Value $license -Encoding UTF8
+    Set-Content -LiteralPath (Join-Path $artifacts 'THIRD-PARTY.txt') -Value $thirdParty -Encoding UTF8
 
     $files = Get-ChildItem -LiteralPath $artifacts -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | Sort-Object Name
     $lines = @()

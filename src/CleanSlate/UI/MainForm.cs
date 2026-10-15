@@ -1,3 +1,6 @@
+// CleanSlate - Copyright (C) 2026 DJ-Erik
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Testo completo della licenza: file LICENSE alla root del repository.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1768,6 +1771,10 @@ namespace CleanSlate.UI
                 + "confermata viene chiesta una conferma separata per rimuovere le sole "
                 + "cartelle rimaste vuote sotto la cartella temporanea: la radice non viene "
                 + "mai eliminata e i collegamenti non vengono toccati.\r\n\r\n"
+                + "Licenza\r\n"
+                + "GNU General Public License v3.0 or later (GPL-3.0-or-later). "
+                + "Il testo completo è nel file LICENSE del sorgente. "
+                + "Il nome e il logo non sono concessi per uso di marchio dalla licenza.\r\n\r\n"
                 + "Avvertenza\r\n"
                 + "I file eliminati non sono recuperabili.";
         }

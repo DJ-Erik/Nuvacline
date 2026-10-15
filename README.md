@@ -187,3 +187,23 @@ Vedi [PRIVACY.md](PRIVACY.md).
 ## Storia delle versioni
 
 Vedi [CHANGELOG.md](CHANGELOG.md).
+
+## Licenza
+
+Il **codice sorgente** di CleanSlate è concesso sotto la
+**GNU General Public License v3.0 or later (GPL-3.0-or-later)**.
+Il testo integrale e inalterato si trova nel file [LICENSE](LICENSE)
+alla root del repository. L'identificatore SPDX è `GPL-3.0-or-later`.
+
+- **Sorgente corrispondente**: ogni binario distribuito corrisponde al sorgente
+  presente in questo repository (branch `master`). Per ottenere il sorgente di
+  una versione rilasciata usare il tag Git corrispondente (es. `v0.4.5`).
+- **Dipendenze di terze parti**: nessuna. Il runtime .NET Framework 4.8 è un
+  componente Microsoft di Windows, non ridistribuito con CleanSlate.
+- **Marchio e nome**: la GPL non concede diritti di marchio. Il nome e il logo
+  CleanSlate non sono automaticamente utilizzabili per usi di marchio.
+- **Logo**: gli asset in `assets/logo/` sono stati generati con strumenti di
+  intelligenza artificiale. Non viene rivendicata una titolarità di copyright
+  sull'immagine in quanto opera derivata; sarà sostituito in una versione
+  futura con un logo a titolarità chiara. La licenza GPL si applica al codice
+  sorgente del progetto.

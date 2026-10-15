@@ -1,3 +1,6 @@
+// CleanSlate - Copyright (C) 2026 DJ-Erik
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Testo completo della licenza: file LICENSE alla root del repository.
 namespace CleanSlate.Core
 {
     /// <summary>Tema cromatico dell'interfaccia, allineato a quello di Windows.</summary>
