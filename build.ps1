@@ -31,7 +31,7 @@ if (-not $SkipTests) {
 }
 
 if ($Package) {
-    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'nuvacline-0.5.1'
+    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'nuvacline-0.5.2'
     if (-not $artifacts.StartsWith($Root, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Percorso degli artefatti non valido.'
     }
@@ -45,7 +45,7 @@ if ($Package) {
     Copy-Item -LiteralPath $appExe -Destination (Join-Path $artifacts 'Nuvacline.exe') -Force
 
     $readme = @"
-Nuvacline 0.5.1
+Nuvacline 0.5.2
 ===============
 
 COSA FA
@@ -135,7 +135,7 @@ Nessun componente di terze parti e' incluso. Vedere THIRD-PARTY.txt.
     Copy-Item -LiteralPath (Join-Path $Root 'SECURITY.md') -Destination (Join-Path $artifacts 'SECURITY.md') -Force
 
     $thirdParty = @"
-Nuvacline 0.5.1 - note su licenze e dipendenze
+Nuvacline 0.5.2 - note su licenze e dipendenze
 ==============================================
 
 Dipendenze di terze parti incluse nella distribuzione: NESSUNA.

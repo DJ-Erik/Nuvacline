@@ -1,6 +1,6 @@
 # Privacy di Nuvacline
 
-Documento relativo alla versione **0.5.1**.
+Documento relativo alla versione **0.5.2**.
 
 ## In una frase
 

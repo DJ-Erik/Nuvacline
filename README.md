@@ -1,5 +1,4 @@
-# Nuvacline 0.5.1
-
+# Nuvacline 0.5.2
 <img src="assets/logo/Nuvacline.png" width="420" alt="Nuvacline">
 
 Nuvacline è un pulitore di file temporanei per Windows, **portatile, offline, in italiano**.
@@ -140,7 +139,7 @@ nuvacline/
 ├── src/
 │   ├── Nuvacline/        applicazione (Core, UI, Program, manifest)
 │   └── Nuvacline.Tests/  runner di test + 231 test
-├── artifacts/nuvacline-0.5.1/ pacchetto distribuibile
+├── artifacts/nuvacline-0.5.2/ pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -154,7 +153,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\nuvacline-0.5.1
+# compilazione + test + pacchetto portable in artifacts\nuvacline-0.5.2
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -179,7 +178,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\nuvacline-0.5.1\` con `Nuvacline.exe`, `README.txt`, `LICENSE`, `PRIVACY.md`, `SECURITY.md`, `THIRD-PARTY.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\nuvacline-0.5.2\` con `Nuvacline.exe`, `README.txt`, `LICENSE`, `PRIVACY.md`, `SECURITY.md`, `THIRD-PARTY.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -241,7 +240,7 @@ alla root del repository. L'identificatore SPDX è `GPL-3.0-or-later`.
 
 - **Sorgente corrispondente**: ogni binario distribuito corrisponde al sorgente
   presente in questo repository (branch `master`). Per ottenere il sorgente di
-  una versione rilasciata usare il tag Git corrispondente (es. `v0.5.1`).
+  una versione rilasciata usare il tag Git corrispondente (es. `v0.5.2`).
 - **Dipendenze di terze parti**: nessuna. Il runtime .NET Framework 4.8 è un
   componente Microsoft di Windows, non ridistribuito con Nuvacline.
 - **Marchio e nome**: la GPL non concede diritti di marchio. Il nome e il logo

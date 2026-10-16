@@ -1,6 +1,6 @@
 # Sicurezza di Nuvacline
 
-Documento relativo alla versione **0.5.1**.
+Documento relativo alla versione **0.5.2**.
 
 ## Modello di minaccia
 
@@ -175,7 +175,7 @@ vedi "Rischi residui dichiarati" punto 6.
 Progetto alpha locale, senza canale pubblico dedicato. Per segnalare un problema aprire un
 issue indicando:
 
-- versione (`Nuvacline 0.5.1`);
+- versione (`Nuvacline 0.5.2`);
 - passi per riprodurre;
 - percorso interessato (senza dati personali);
 - cosa ci si aspettava e cosa è successo.

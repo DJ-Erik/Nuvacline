@@ -130,7 +130,18 @@ namespace Nuvacline.UI
             {
                 ShowMessageOwner(text, "Nuvacline", MessageBoxIcon.Warning);
             };
-            _setClipboard = delegate(string text) { Clipboard.SetText(text); };
+            _setClipboard = delegate(string text)
+            {
+                // Su Windows la prima scrittura negli appunti del processo puo'
+                // fallire finche' il thread non ha una coda messaggi: retry con pump.
+                Exception last = null;
+                for (int attempt = 0; attempt < 5; attempt++)
+                {
+                    try { Clipboard.SetText(text); return; }
+                    catch (Exception ex) { last = ex; Application.DoEvents(); Thread.Sleep(40); }
+                }
+                throw last;
+            };
             _startProcess = delegate(ProcessStartInfo info) { Process.Start(info); };
             _loadSettings = delegate { return ScanSettings.Load(); };
             _saveSettings = delegate(int hours) { ScanSettings.Save(hours); };

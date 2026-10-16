@@ -2,6 +2,12 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.5.2] - 2026-10-16
+
+### Cambiato
+
+- **Versione**: 0.5.1 -> 0.5.2.
+
 ## [0.5.1] — 2026-10-16
 
 Documentazione dell'ambito della pulizia e allineamento dei metadati di versione.
