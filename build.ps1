@@ -31,7 +31,7 @@ if (-not $SkipTests) {
 }
 
 if ($Package) {
-    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'nuvacline-0.5.0'
+    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'nuvacline-0.5.1'
     if (-not $artifacts.StartsWith($Root, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Percorso degli artefatti non valido.'
     }
@@ -45,8 +45,8 @@ if ($Package) {
     Copy-Item -LiteralPath $appExe -Destination (Join-Path $artifacts 'Nuvacline.exe') -Force
 
     $readme = @"
-Nuvacline 0.5.0
-==================
+Nuvacline 0.5.1
+===============
 
 COSA FA
 -------
@@ -54,6 +54,14 @@ Nuvacline individua e rimuove i file temporanei dell'utente corrente
 (cartella restituita dall'ambiente Windows), escludendo per impostazione
 predefinita i file modificati nelle ultime 24 ore. L'interfaccia segue
 automaticamente il tema chiaro/scuro impostato in Windows.
+
+AMBITO DELLA PULIZIA
+--------------------
+La pulizia opera sulla cartella temporanea dell'utente Windows corrente
+(la cartella restituita dall'ambiente Windows). Non pulisce gli altri
+account o le cartelle di sistema e non e' possibile aggiungere percorsi
+personalizzati. I risultati possono variare in presenza di file in uso,
+permessi insufficienti o altri limiti del sistema.
 
 COME SI USA
 -----------
@@ -90,7 +98,7 @@ LIMITI CONOSCIUTI
 - Versione alpha: l'unica categoria supportata e' "File temporanei dell'utente".
 - I file recenti (ultime 24 ore) e i file bloccati vengono saltati.
 - I percorsi molto lunghi (> 260 caratteri) possono non essere gestiti:
-  in tal caso l'elemento viene saltato e contegliato, mai eliminato a caso.
+  in tal caso l'elemento viene saltato e conteggiato, mai eliminato a caso.
 - Lo spazio indicato come recuperabile e' una stima: parte puo' gia' essere
   libero o non immediatamente disponibile.
 
@@ -113,8 +121,8 @@ non viene rivendicata titolarita' di copyright sull'immagine.
 Sorgente corrispondente: repository Git del progetto, branch master,
 tag della versione rilasciata.
 
-DIPIENDENZE
------------
+DIPENDENZE
+----------
 Nessun componente di terze parti e' incluso. Vedere THIRD-PARTY.txt.
 "@
     Set-Content -LiteralPath (Join-Path $artifacts 'README.txt') -Value $readme -Encoding UTF8
@@ -122,9 +130,13 @@ Nessun componente di terze parti e' incluso. Vedere THIRD-PARTY.txt.
     # Testo integrale della licenza GNU GPL v3 dalla root del repository.
     Copy-Item -LiteralPath (Join-Path $Root 'LICENSE') -Destination (Join-Path $artifacts 'LICENSE') -Force
 
+    # Documenti privacy e sicurezza della versione (copia della root del repository).
+    Copy-Item -LiteralPath (Join-Path $Root 'PRIVACY.md') -Destination (Join-Path $artifacts 'PRIVACY.md') -Force
+    Copy-Item -LiteralPath (Join-Path $Root 'SECURITY.md') -Destination (Join-Path $artifacts 'SECURITY.md') -Force
+
     $thirdParty = @"
-Nuvacline 0.5.0 - note su licenze e dipendenze
-==================================================
+Nuvacline 0.5.1 - note su licenze e dipendenze
+==============================================
 
 Dipendenze di terze parti incluse nella distribuzione: NESSUNA.
 

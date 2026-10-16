@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
-  <assemblyIdentity version="0.4.5.0" name="Nuvacline.app" type="win32" />
-  <description>Nuvacline 0.4.5</description>
+  <assemblyIdentity version="0.5.1.0" name="Nuvacline.app" type="win32" />
+  <description>Nuvacline 0.5.1</description>
 
   <!-- Nessun privilegio amministrativo richiesto. -->
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">

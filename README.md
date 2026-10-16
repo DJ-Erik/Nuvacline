@@ -1,4 +1,4 @@
-# Nuvacline 0.5.0
+# Nuvacline 0.5.1
 
 <img src="assets/logo/Nuvacline.png" width="420" alt="Nuvacline">
 
@@ -21,6 +21,15 @@ Nuvacline **non promette di accelerare il computer**. Rimuove soltanto file temp
 dell'utente corrente che sono più vecchi di 24 ore (soglia configurabile da interfaccia:
 1 ora, 6 ore, 12 ore, 24 ore, 48 ore, 7 giorni oppure nessuna soglia; la scelta è
 persistita localmente e si applica sia all'analisi sia alla pulizia).
+
+### Ambito della pulizia
+
+Nuvacline pulisce la cartella temporanea dell'utente Windows corrente, cioè la cartella
+indicata dall'ambiente Windows (in genere la directory `Temp` sotto `AppData\Local`).
+Non è progettato per pulire indiscriminatamente tutti gli account Windows o le cartelle
+di sistema. I risultati possono variare in presenza di file in uso, permessi
+insufficienti o altri limiti del sistema. Non è possibile aggiungere percorsi
+personalizzati.
 
 ---
 
@@ -130,8 +139,8 @@ nuvacline/
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
 │   ├── Nuvacline/        applicazione (Core, UI, Program, manifest)
-│   └── Nuvacline.Tests/  runner di test + 197 test
-├── artifacts/nuvacline-0.5.0/ pacchetto distribuibile
+│   └── Nuvacline.Tests/  runner di test + 231 test
+├── artifacts/nuvacline-0.5.1/ pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
@@ -145,7 +154,7 @@ nulla**.
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\nuvacline-0.5.0
+# compilazione + test + pacchetto portable in artifacts\nuvacline-0.5.1
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -160,7 +169,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 
 | Verifica | Risultato |
 |---|---|
-| Suite di test | **197 test** (159 di 0.3.6 + 22 `EmptyFolderCleanerTests` 0.4.0 + 16 `CleanupDetailsTests` 0.4.5); i 5 `RowContextMenuTests` clipboard possono fallire in sessione bloccata (flaky ambientale), non difetti di prodotto |
+| Suite di test | **231 test** (159 di 0.3.6 + 22 `EmptyFolderCleanerTests` 0.4.0, più 50 aggiunti fino alla 0.5.1: dettagli pulizia, menu contestuale, selezione massiva, soglia, riepiloghi, informazioni/impostazioni e tema); i test di copia negli appunti usano un breve ri-tentativo e un eventuale fallimento in sessione bloccata resta ambientale, non un difetto di prodotto |
 | Verifica end-to-end GUI (`verify.ps1`) | **41/41 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
@@ -170,7 +179,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\nuvacline-0.5.0\` con `Nuvacline.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\nuvacline-0.5.1\` con `Nuvacline.exe`, `README.txt`, `LICENSE`, `PRIVACY.md`, `SECURITY.md`, `THIRD-PARTY.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -232,7 +241,7 @@ alla root del repository. L'identificatore SPDX è `GPL-3.0-or-later`.
 
 - **Sorgente corrispondente**: ogni binario distribuito corrisponde al sorgente
   presente in questo repository (branch `master`). Per ottenere il sorgente di
-  una versione rilasciata usare il tag Git corrispondente (es. `v0.5.0`).
+  una versione rilasciata usare il tag Git corrispondente (es. `v0.5.1`).
 - **Dipendenze di terze parti**: nessuna. Il runtime .NET Framework 4.8 è un
   componente Microsoft di Windows, non ridistribuito con Nuvacline.
 - **Marchio e nome**: la GPL non concede diritti di marchio. Il nome e il logo

@@ -2,6 +2,36 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.5.1] — 2026-10-16
+
+Documentazione dell'ambito della pulizia e allineamento dei metadati di versione.
+
+### Aggiunto
+
+- **Sezione «Ambito della pulizia»** nel README e nella finestra Informazioni: la pulizia
+  opera sulla cartella temporanea dell'utente corrente restituita dall'ambiente Windows
+  (`Path.GetTempPath()`); non pulisce indiscriminatamente gli altri account o le cartelle
+  di sistema; i risultati possono variare per file in uso, permessi insufficienti o altri
+  limiti del sistema; non esiste una funzione per aggiungere percorsi personalizzati.
+
+### Cambiato
+
+- **Versione**: 0.5.0 → 0.5.1 (`AssemblyVersion`, `AssemblyFileVersion`,
+  `AssemblyInformationalVersion`, fallback in `AppInfo`).
+- **Manifest applicativo**: allineato a `0.5.1.0` (era rimasto a `0.4.5.0`).
+- **README, PRIVACY.md, SECURITY.md**: aggiornati alla versione 0.5.1; nel README lo
+  «Stato verificato» riporta il conteggio reale dei test (231) e l'elenco completo dei
+  file del pacchetto.
+- **`build.ps1`**: pacchetto portable in `artifacts/nuvacline-0.5.1/` con anche
+  `PRIVACY.md` e `SECURITY.md` (7 file, come la release 0.5.0); corretti refusi nel
+  template del pacchetto.
+
+### Note
+
+- Nessuna modifica funzionale a scansione, cancellazione, interfaccia o formato del
+  report: la 0.5.1 è la 0.5.0 più la sezione «Ambito della pulizia» e i metadati di
+  versione.
+
 ## [0.5.0] — 2026-10-15
 
 Rebranding completo da CleanSlate a Nuvacline e passaggio di licenza a GPL-3.0-or-later.

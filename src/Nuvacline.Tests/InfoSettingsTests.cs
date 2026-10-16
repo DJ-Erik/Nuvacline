@@ -172,21 +172,21 @@ namespace Nuvacline.Tests
         #region Versione
 
         [Test]
-        public void CanonicalVersion_Is_0_5_0_AndUsedEverywhere()
+        public void CanonicalVersion_Is_0_5_1_AndUsedEverywhere()
         {
-            Assert.Equal("0.5.0", AppInfo.VersionText,
-                "La versione canonica del prodotto deve essere 0.5.0.");
+            Assert.Equal("0.5.1", AppInfo.VersionText,
+                "La versione canonica del prodotto deve essere 0.5.1.");
 
             Exception failure = null;
             RunInSta(delegate
             {
                 using (MainForm form = new MainForm())
                 {
-                    Assert.Equal("Nuvacline 0.5.0", form.Text,
-                        "Il titolo della finestra deve riportare la versione 0.5.0.");
+                    Assert.Equal("Nuvacline 0.5.1", form.Text,
+                        "Il titolo della finestra deve riportare la versione 0.5.1.");
                     Label title = GetField<Label>(form, "_titleLabel");
-                    Assert.Equal("Nuvacline 0.5.0", title.Text,
-                        "L'etichetta del titolo deve riportare la versione 0.5.0.");
+                    Assert.Equal("Nuvacline 0.5.1", title.Text,
+                        "L'etichetta del titolo deve riportare la versione 0.5.1.");
                 }
             }, out failure);
             if (failure != null) throw failure;

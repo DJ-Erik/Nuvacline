@@ -396,7 +396,7 @@ if ($null -ne $btnInfoEl) {
                                          [System.Windows.Automation.Condition]::TrueCondition)) {
             if ($d.Current.Name) { $infoBody += ' | ' + $d.Current.Name }
         }
-        Check ($infoBody -like '*0.5.0*') 'La finestra Informazioni riporta la versione 0.5.0'
+        Check ($infoBody -like '*0.5.1*') 'La finestra Informazioni riporta la versione 0.5.1'
         Check ($infoBody -like '*Nessuna connessione di rete*') 'La finestra Informazioni dichiara l''assenza di connessioni di rete'
         Check ($infoBody -like '*I file eliminati non sono recuperabili*') 'La finestra Informazioni riporta l''avvertenza sui file eliminati'
 
