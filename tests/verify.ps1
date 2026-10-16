@@ -1,4 +1,4 @@
-﻿# Verifica end-to-end di CleanSlate su un eseguibile reale.
+# Verifica end-to-end di Nuvacline su un eseguibile reale.
 #
 # Controlla:
 #   1. l'avvio della GUI, la pressione di "Analizza" e la lettura dello stato finale;
@@ -32,7 +32,7 @@ trap {
 }
 
 $root = Split-Path -Parent $PSScriptRoot
-if ([string]::IsNullOrEmpty($Exe)) { $Exe = Join-Path $root 'bin\Release\CleanSlate.exe' }
+if ([string]::IsNullOrEmpty($Exe)) { $Exe = Join-Path $root 'bin\Release\Nuvacline.exe' }
 
 $script:failures = New-Object System.Collections.ArrayList
 $script:notes = New-Object System.Collections.ArrayList
@@ -54,7 +54,7 @@ function Note([string]$message) {
 # ---------------------------------------------------------------- snapshot ---
 
 $registryKeys = @(
-    'HKCU:\Software\CleanSlate',
+    'HKCU:\Software\Nuvacline',
     'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run',
     'HKCU:\Software\Microsoft\Windows\CurrentVersion\RunOnce',
     'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Windows',
@@ -105,7 +105,7 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Runtime.InteropServices;
-public static class CleanSlateClick {
+public static class NuvaclineClick {
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")]
@@ -179,12 +179,12 @@ function Get-TreeSignature($scope) {
 
 function Invoke-Button($element) {
     $handle = [IntPtr]([int]$element.Current.AutomationId)
-    [void][CleanSlateClick]::SendMessage($handle, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)
+    [void][NuvaclineClick]::SendMessage($handle, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)
 }
 
 function Invoke-ButtonAsync($element) {
     $handle = [IntPtr]([int]$element.Current.AutomationId)
-    [void][CleanSlateClick]::BeginBmClick($handle)
+    [void][NuvaclineClick]::BeginBmClick($handle)
 }
 
 function Get-SiblingWindows($processId, $excludeHandle) {
@@ -213,7 +213,7 @@ function Close-SiblingWindows($processId, $excludeHandle, $log) {
 # ------------------------------------------------------------------ esecuzione ---
 
 Write-Host ''
-Write-Host 'Verifica end-to-end di CleanSlate'
+Write-Host 'Verifica end-to-end di Nuvacline'
 Write-Host ('Eseguibile: ' + $Exe)
 Write-Host ''
 
@@ -225,10 +225,10 @@ $registryBefore = Get-RegistrySnapshot
 $servicesBefore = Get-ServiceNames
 $tasksBefore = Get-ScheduledTaskNames
 
-$reportsDir = Join-Path $env:LOCALAPPDATA 'CleanSlate\reports'
+$reportsDir = Join-Path $env:LOCALAPPDATA 'Nuvacline\reports'
 $reportCountBefore = 0
 if (Test-Path -LiteralPath $reportsDir) {
-    $reportCountBefore = @(Get-ChildItem -LiteralPath $reportsDir -Filter 'cleanslate-*.txt' -ErrorAction SilentlyContinue).Count
+    $reportCountBefore = @(Get-ChildItem -LiteralPath $reportsDir -Filter 'nuvacline-*.txt' -ErrorAction SilentlyContinue).Count
 }
 
 Write-Host '2) Avvio della finestra...'
@@ -248,7 +248,7 @@ if ($proc.MainWindowHandle -eq 0) {
 }
 
 $mainWin = [System.Windows.Automation.AutomationElement]::FromHandle($proc.MainWindowHandle)
-Check ($mainWin.Current.Name -like 'CleanSlate*') ('Titolo della finestra: ' + $mainWin.Current.Name)
+Check ($mainWin.Current.Name -like 'Nuvacline*') ('Titolo della finestra: ' + $mainWin.Current.Name)
 
 $statusEl = Find-ByName $mainWin 'Pronto.'
 $summaryEl = Find-ByNamePrefix $mainWin 'Nessuna analisi eseguita.'
@@ -368,7 +368,7 @@ if ($null -ne $reportPath -and (Test-Path -LiteralPath $reportPath)) {
     Check ($reportContent -like '*report locale*') 'Il report contiene l''intestazione attesa'
     Check ($reportContent -notlike ('*' + $env:USERPROFILE + '*')) 'Il report non contiene il profilo utente'
 
-    $reportCountAfter = @(Get-ChildItem -LiteralPath $reportsDir -Filter 'cleanslate-*.txt' -ErrorAction SilentlyContinue).Count
+    $reportCountAfter = @(Get-ChildItem -LiteralPath $reportsDir -Filter 'nuvacline-*.txt' -ErrorAction SilentlyContinue).Count
     Check ($reportCountAfter -eq ($reportCountBefore + 1)) `
         ('Esattamente un nuovo report (prima: ' + $reportCountBefore + ', dopo: ' + $reportCountAfter + ')')
 }
@@ -388,7 +388,7 @@ Check ($null -ne $btnGearEl) 'Il pulsante dell''ingranaggio delle Impostazioni �
 if ($null -ne $btnInfoEl) {
     Invoke-ButtonAsync $btnInfoEl
     Start-Sleep -Milliseconds 700
-    $infoWin = Find-ByNamePrefix $mainWin 'Informazioni su CleanSlate'
+    $infoWin = Find-ByNamePrefix $mainWin 'Informazioni su Nuvacline'
     Check ($null -ne $infoWin) 'Il clic su "?" apre la finestra Informazioni'
     if ($null -ne $infoWin) {
         $infoBody = ''
@@ -396,18 +396,18 @@ if ($null -ne $btnInfoEl) {
                                          [System.Windows.Automation.Condition]::TrueCondition)) {
             if ($d.Current.Name) { $infoBody += ' | ' + $d.Current.Name }
         }
-        Check ($infoBody -like '*0.4.5*') 'La finestra Informazioni riporta la versione 0.4.5'
+        Check ($infoBody -like '*0.5.0*') 'La finestra Informazioni riporta la versione 0.5.0'
         Check ($infoBody -like '*Nessuna connessione di rete*') 'La finestra Informazioni dichiara l''assenza di connessioni di rete'
         Check ($infoBody -like '*I file eliminati non sono recuperabili*') 'La finestra Informazioni riporta l''avvertenza sui file eliminati'
 
         $okEl = Find-ByName $infoWin 'OK'
         if ($null -ne $okEl) { Invoke-Button $okEl }
         Start-Sleep -Milliseconds 600
-        $infoStillOpen = ($null -ne (Find-ByNamePrefix $mainWin 'Informazioni su CleanSlate'))
+        $infoStillOpen = ($null -ne (Find-ByNamePrefix $mainWin 'Informazioni su Nuvacline'))
         Check (-not $infoStillOpen) 'Il pulsante OK chiude la finestra Informazioni'
         if ($infoStillOpen) {
             Note 'La finestra Informazioni non si è chiusa con OK: chiusura forzata solo per la verifica.'
-            $still = Find-ByNamePrefix $mainWin 'Informazioni su CleanSlate'
+            $still = Find-ByNamePrefix $mainWin 'Informazioni su Nuvacline'
             if ($null -ne $still) {
                 try {
                     $pattern = $still.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
@@ -437,13 +437,13 @@ if ($null -ne $btnGearEl) {
 
         $menuHwnd = [IntPtr]$menuWin.Current.NativeWindowHandle
         if ($menuHwnd -eq [IntPtr]::Zero) {
-            $menuHwnd = [CleanSlateClick]::FindContextMenuWindow([uint32]$proc.Id)
+            $menuHwnd = [NuvaclineClick]::FindContextMenuWindow([uint32]$proc.Id)
         }
-        [void][CleanSlateClick]::SendEscape($menuHwnd)
+        [void][NuvaclineClick]::SendEscape($menuHwnd)
         Start-Sleep -Milliseconds 700
         $menuStillOpen = (Get-TreeSignature $mainWin).ContainsKey($menuKey)
         if ($menuStillOpen) {
-            [void][CleanSlateClick]::SendEscape([IntPtr]$mainHandle)
+            [void][NuvaclineClick]::SendEscape([IntPtr]$mainHandle)
             Start-Sleep -Milliseconds 700
             $menuStillOpen = (Get-TreeSignature $mainWin).ContainsKey($menuKey)
         }
@@ -470,7 +470,7 @@ if (-not $exited) {
 Start-Sleep -Milliseconds 500
 
 $stillRunning = $null -ne (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue)
-Check (-not $stillRunning) 'Nessun processo CleanSlate residente dopo la chiusura'
+Check (-not $stillRunning) 'Nessun processo Nuvacline residente dopo la chiusura'
 
 $netResult = $null
 try {
@@ -491,12 +491,12 @@ $tasksAfter = Get-ScheduledTaskNames
 Check ($registryBefore -eq $registryAfter) 'Il registro di sistema è invariato'
 Check ($servicesBefore -eq $servicesAfter) 'Elenco dei servizi invariato'
 Check ($tasksBefore -eq $tasksAfter) 'Elenco delle attività pianificate invariato'
-Check (-not (Test-Path -LiteralPath 'HKCU:\Software\CleanSlate')) 'Nessuna chiave di registro creata da CleanSlate'
+Check (-not (Test-Path -LiteralPath 'HKCU:\Software\Nuvacline')) 'Nessuna chiave di registro creata da Nuvacline'
 
 $runEntries = @()
 try {
     $runKey = Get-Item -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-    $runEntries = @($runKey.GetValueNames() | Where-Object { $_ -like '*CleanSlate*' })
+    $runEntries = @($runKey.GetValueNames() | Where-Object { $_ -like '*Nuvacline*' })
 } catch { }
 Check ($runEntries.Count -eq 0) 'Nessuna voce di avvio automatico creata'
 

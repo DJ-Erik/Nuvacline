@@ -1,4 +1,4 @@
-# Compila CleanSlate e, su richiesta, prepara il pacchetto portable.
+# Compila Nuvacline e, su richiesta, prepara il pacchetto portable.
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File build.ps1
 #   powershell -ExecutionPolicy Bypass -File build.ps1 -Package
@@ -27,11 +27,11 @@ if (-not $SkipTests) {
     if ($LASTEXITCODE -ne 0) {
         throw 'La suite di test non superata: nessun pacchetto è stato generato o aggiornato.'
     }
-    $appExe = Join-Path $Root "bin\$Configuration\CleanSlate.exe"
+    $appExe = Join-Path $Root "bin\$Configuration\Nuvacline.exe"
 }
 
 if ($Package) {
-    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'alpha-0.4.5'
+    $artifacts = Join-Path (Join-Path $Root 'artifacts') 'nuvacline-0.5.0'
     if (-not $artifacts.StartsWith($Root, [System.StringComparison]::OrdinalIgnoreCase)) {
         throw 'Percorso degli artefatti non valido.'
     }
@@ -42,27 +42,27 @@ if ($Package) {
     }
     New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
 
-    Copy-Item -LiteralPath $appExe -Destination (Join-Path $artifacts 'CleanSlate.exe') -Force
+    Copy-Item -LiteralPath $appExe -Destination (Join-Path $artifacts 'Nuvacline.exe') -Force
 
     $readme = @"
-CleanSlate 0.4.5
+Nuvacline 0.5.0
 ==================
 
 COSA FA
 -------
-CleanSlate individua e rimuove i file temporanei dell'utente corrente
-(carella restituita dall'ambiente Windows), escludendo per impostazione
+Nuvacline individua e rimuove i file temporanei dell'utente corrente
+(cartella restituita dall'ambiente Windows), escludendo per impostazione
 predefinita i file modificati nelle ultime 24 ore. L'interfaccia segue
 automaticamente il tema chiaro/scuro impostato in Windows.
 
 COME SI USA
 -----------
-1. Avviare CleanSlate.exe.
+1. Avviare Nuvacline.exe.
 2. Premere "Analizza": l'analisi e' in sola lettura e non modifica nulla.
 3. Esaminare l'elenco, selezionare o deselezionare gli elementi desiderati.
 4. Premere "Pulisci selezionati" e confermare nella finestra di conferma.
 5. Il report locale viene scritto in automatico in
-   %LOCALAPPDATA%\CleanSlate\reports\ e il percorso appare nella finestra.
+   %LOCALAPPDATA%\Nuvacline\reports\ e il percorso appare nella finestra.
    "Apri report" lo apre nel lettore di testo predefinito.
 6. Il pulsante "?" mostra le informazioni sul prodotto; il pulsante con
    l'ingranaggio consente di attivare o disattivare la conservazione dei
@@ -98,7 +98,7 @@ CONTROLLI DI INTEGRITA'
 -----------------------
 I file SHA256SUMS.txt riportano l'impronta SHA-256 dei file di questa cartella.
 Verifica con:
-  certutil -hashfile CleanSlate.exe SHA256
+  certutil -hashfile Nuvacline.exe SHA256
 
 LICENZA
 -------
@@ -123,12 +123,12 @@ Nessun componente di terze parti e' incluso. Vedere THIRD-PARTY.txt.
     Copy-Item -LiteralPath (Join-Path $Root 'LICENSE') -Destination (Join-Path $artifacts 'LICENSE') -Force
 
     $thirdParty = @"
-CleanSlate 0.4.5 - note su licenze e dipendenze
+Nuvacline 0.5.0 - note su licenze e dipendenze
 ==================================================
 
 Dipendenze di terze parti incluse nella distribuzione: NESSUNA.
 
-CleanSlate e' un singolo eseguibile compilato con il compilatore C#
+Nuvacline e' un singolo eseguibile compilato con il compilatore C#
 fornito con .NET Framework e non include librerie di terze parti.
 
 Requisito a runtime: .NET Framework 4.8 (o successivo), componente
@@ -142,7 +142,7 @@ Gli strumenti usati SOLO per la compilazione (csc.exe in-box di
 I file di questa cartella non contengono codice di terze parti,
 pubblicita, telemetria o risorse scaricate da Internet.
 
-La licenza del codice sorgente di CleanSlate e' la GNU GPL-3.0-or-later:
+La licenza del codice sorgente di Nuvacline e' la GNU GPL-3.0-or-later:
 vedere il file LICENSE di questa cartella.
 "@
     Set-Content -LiteralPath (Join-Path $artifacts 'THIRD-PARTY.txt') -Value $thirdParty -Encoding UTF8

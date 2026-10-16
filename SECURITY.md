@@ -1,10 +1,10 @@
-# Sicurezza di CleanSlate
+# Sicurezza di Nuvacline
 
-Documento relativo alla versione **0.4.5**.
+Documento relativo alla versione **0.5.0**.
 
 ## Modello di minaccia
 
-CleanSlate è uno strumento desktop che cancella file. Il rischio principale non è un attaccante
+Nuvacline è uno strumento desktop che cancella file. Il rischio principale non è un attaccante
 esterno ma lo **stesso strumento**: un percorso sbagliato, un collegamento simbolico o un errore
 di logica potrebbero portare alla cancellazione di file che non dovevano essere toccati.
 
@@ -175,7 +175,7 @@ vedi "Rischi residui dichiarati" punto 6.
 Progetto alpha locale, senza canale pubblico dedicato. Per segnalare un problema aprire un
 issue indicando:
 
-- versione (`CleanSlate 0.4.5`);
+- versione (`Nuvacline 0.5.0`);
 - passi per riprodurre;
 - percorso interessato (senza dati personali);
 - cosa ci si aspettava e cosa è successo.

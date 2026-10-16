@@ -1,4 +1,4 @@
-# Funzioni condivise di compilazione per CleanSlate.
+# Funzioni condivise di compilazione per Nuvacline.
 # Si basa esclusivamente sul compilatore C# in-box di .NET Framework:
 # nessun SDK, nessun ripristino di pacchetti, nessuna dipendenza di terze parti.
 
@@ -11,13 +11,13 @@ function Get-CscPath {
 }
 
 function Get-AppSources([string]$root) {
-    $dir = Join-Path $root 'src\CleanSlate'
+    $dir = Join-Path $root 'src\Nuvacline'
     if (-not (Test-Path -LiteralPath $dir)) { throw "Cartella sorgenti non trovata: $dir" }
     @(Get-ChildItem -Path $dir -Filter '*.cs' -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName })
 }
 
 function Get-TestSources([string]$root) {
-    $dir = Join-Path $root 'src\CleanSlate.Tests'
+    $dir = Join-Path $root 'src\Nuvacline.Tests'
     if (-not (Test-Path -LiteralPath $dir)) { throw "Cartella test non trovata: $dir" }
     @(Get-ChildItem -Path $dir -Filter '*.cs' -Recurse -File | Sort-Object FullName | ForEach-Object { $_.FullName })
 }
@@ -27,13 +27,13 @@ function Invoke-AppBuild([string]$root, [string]$configuration) {
     $outDir = Join-Path $root "bin\$configuration"
     New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-    $exe = Join-Path $outDir 'CleanSlate.exe'
+    $exe = Join-Path $outDir 'Nuvacline.exe'
     $sources = Get-AppSources $root
     if ($sources.Count -eq 0) { throw 'Nessuna sorgente applicativa trovata.' }
 
-    $manifest = Join-Path $root 'src\CleanSlate\app.manifest'
-    $icon = Join-Path $root 'assets\logo\CleanSlate.ico'
-    if (-not (Test-Path -LiteralPath $icon)) { throw "Icona dell'applicazione non trovata: $icon" }
+    $manifest = Join-Path $root 'src\Nuvacline\app.manifest'
+    $icon = Join-Path $root 'assets\logo\Nuvacline.ico'
+    if (-not (Test-Path -LiteralPath $icon)) { throw "Icona dell'applicazione non trovata: $icon (creare assets\logo\Nuvacline.ico prima della build)" }
     $cscArgs = @(
         '/nologo',
         '/noconfig',
@@ -68,7 +68,7 @@ function Invoke-TestBuild([string]$root, [string]$configuration, [string]$appExe
     $outDir = Join-Path $root 'tests\bin'
     New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
-    $exe = Join-Path $outDir 'CleanSlate.Tests.exe'
+    $exe = Join-Path $outDir 'Nuvacline.Tests.exe'
     $sources = Get-TestSources $root
     if ($sources.Count -eq 0) { throw 'Nessun sorgente di test trovato.' }
 
@@ -93,7 +93,7 @@ function Invoke-TestBuild([string]$root, [string]$configuration, [string]$appExe
     if (-not (Test-Path -LiteralPath $exe)) { throw "Output non trovato: $exe" }
 
     # L'assembly dell'applicazione deve trovarsi accanto al test per essere caricato.
-    Copy-Item -LiteralPath $appExe -Destination (Join-Path $outDir 'CleanSlate.exe') -Force
+    Copy-Item -LiteralPath $appExe -Destination (Join-Path $outDir 'Nuvacline.exe') -Force
 
     return $exe
 }

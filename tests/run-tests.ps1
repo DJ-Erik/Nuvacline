@@ -1,4 +1,4 @@
-# Compila e esegue la suite di test di CleanSlate.
+# Compila e esegue la suite di test di Nuvacline.
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1
 #   powershell -ExecutionPolicy Bypass -File tests\run-tests.ps1 -Configuration Debug
@@ -15,8 +15,8 @@ $Root = Split-Path -Parent $PSScriptRoot
 $appExe = Invoke-AppBuild $Root $Configuration
 $testExe = Invoke-TestBuild $Root $Configuration $appExe
 
-$env:CLEANSLATE_SRC = Join-Path $Root 'src\CleanSlate'
-$env:CLEANSLATE_BIN = Join-Path $Root "bin\$Configuration"
+$env:NUVACLINE_SRC = Join-Path $Root 'src\Nuvacline'
+$env:NUVACLINE_BIN = Join-Path $Root "bin\$Configuration"
 
 Write-Host ''
 Write-Host "Esecuzione della suite: $testExe"

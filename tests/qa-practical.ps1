@@ -1,4 +1,4 @@
-# Validazione pratica pre-beta di CleanSlate 0.4.5.
+# Validazione pratica pre-beta di Nuvacline 0.4.5.
 #
 # Scopo: attraversare il percorso reale analisi -> selezione -> cancellazione usando
 # l'eseguibile verificato, SENZA eliminare dati preesistenti dell'utente.
@@ -17,7 +17,7 @@
 #   Fase 8  H: suite automatica, verifica end-to-end e conferma che la build e' conservata
 #
 # Regole di sicurezza applicate:
-#   - ogni operazione distruttiva e' limitata a percorsi che iniziano per "cleanslate-qa-"
+#   - ogni operazione distruttiva e' limitata a percorsi che iniziano per "nuvacline-qa-"
 #     generati da questo script, e viene annullata se il prefisso non corrisponde;
 #   - la cancellazione di massa, le operazioni ricorsive su cartelle reali e i privilegi
 #     amministrativi non vengono usati;
@@ -71,18 +71,18 @@ trap {
 }
 
 $root = Split-Path -Parent $PSScriptRoot
-$Exe = Join-Path $root 'artifacts\alpha-0.3\CleanSlate.exe'
-$BinExe = Join-Path $root 'bin\Release\CleanSlate.exe'
+$Exe = Join-Path $root 'artifacts\alpha-0.3\Nuvacline.exe'
+$BinExe = Join-Path $root 'bin\Release\Nuvacline.exe'
 
 # Prefisso obbligatorio di ogni percorso che questo script puo' toccare.
 $qaId = [guid]::NewGuid().ToString('N').Substring(0, 8)
-$qaMarker = 'CLEANSLATE-QA-' + $qaId
+$qaMarker = 'NUVACLINE-QA-' + $qaId
 
 $realTemp = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\')
-$realQaDir = Join-Path $realTemp ('cleanslate-qa-' + $qaId)
-$outsideDir = Join-Path $env:LOCALAPPDATA ('CleanSlateQaOutside-' + $qaId)
-$sandbox = Join-Path $env:LOCALAPPDATA ('CleanSlateQaSandbox-' + $qaId)
-$workDir = Join-Path $env:LOCALAPPDATA ('CleanSlateQaWork-' + $qaId)
+$realQaDir = Join-Path $realTemp ('nuvacline-qa-' + $qaId)
+$outsideDir = Join-Path $env:LOCALAPPDATA ('NuvaclineQaOutside-' + $qaId)
+$sandbox = Join-Path $env:LOCALAPPDATA ('NuvaclineQaSandbox-' + $qaId)
+$workDir = Join-Path $env:LOCALAPPDATA ('NuvaclineQaWork-' + $qaId)
 $baselineFile = Join-Path $workDir 'baseline-temp.txt'
 $afterFile = Join-Path $workDir 'after-temp.txt'
 
@@ -247,7 +247,7 @@ function Invoke-NativeButton($element) {
     return $false
 }
 
-function Start-CleanSlate([string]$exePath, [string]$tmpOverride) {
+function Start-Nuvacline([string]$exePath, [string]$tmpOverride) {
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $exePath
     $psi.UseShellExecute = $false
@@ -381,7 +381,7 @@ function Wait-Dialog([uint32]$processId, [int]$timeoutMs) {
 # ================================================================== Fase 0 ====
 
 Write-Host ''
-Write-Host ('Validazione pratica pre-beta di CleanSlate 0.4.5  [id test: ' + $qaId + ']')
+Write-Host ('Validazione pratica pre-beta di Nuvacline 0.4.5  [id test: ' + $qaId + ']')
 Write-Host ('Vero %TEMP%: ' + $realTemp)
 Write-Host ''
 
@@ -410,11 +410,11 @@ Note ('Snapshot del vero %TEMP%: ' + $baselineCount + ' file preesistenti regist
 Write-Host ''
 Write-Host 'Fase 1) A: analisi reale del %TEMP% dell''utente, senza cancellare nulla...'
 
-$proc = Start-CleanSlate $Exe ''
+$proc = Start-Nuvacline $Exe ''
 Check ($proc.MainWindowHandle -ne 0) 'La finestra principale della GUI e'' stata creata'
 
 $mainWin = [System.Windows.Automation.AutomationElement]::FromHandle($proc.MainWindowHandle)
-Check ($mainWin.Current.Name -like 'CleanSlate*') ('Titolo della finestra: ' + $mainWin.Current.Name)
+Check ($mainWin.Current.Name -like 'Nuvacline*') ('Titolo della finestra: ' + $mainWin.Current.Name)
 
 $statusEl = $null
 $summaryEl = $null
@@ -570,15 +570,15 @@ Write-Host 'Fase 3) C: regole di eta'' e anteprima sul codice di produzione...'
 
 # 3a. Lo scanner di produzione, sul vero %TEMP%, deve proporre solo i file vecchi.
 #     L'assembly viene caricato da una copia identica: PowerShell non deve bloccare
-#     bin\Release\CleanSlate.exe, che la Fase 8 ricompila.
-$engineCopy = Join-Path $workDir 'CleanSlateEngine.exe'
+#     bin\Release\Nuvacline.exe, che la Fase 8 ricompila.
+$engineCopy = Join-Path $workDir 'NuvaclineEngine.exe'
 Copy-Item -LiteralPath $BinExe -Destination $engineCopy -Force
 # L'assembly viene caricato dai byte della copia: il file non resta bloccato e la
 # cartella di lavoro puo' essere rimossa a fine validazione.
 $engineBytes = [System.IO.File]::ReadAllBytes($engineCopy)
 [void][System.Reflection.Assembly]::Load($engineBytes)
-$scanner = New-Object CleanSlate.Core.TempFolderScanner
-$scanOptions = New-Object CleanSlate.Core.ScanOptions
+$scanner = New-Object Nuvacline.Core.TempFolderScanner
+$scanOptions = New-Object Nuvacline.Core.ScanOptions
 $scanOptions.Root = $realTemp
 $scanOptions.CancellationToken = [System.Threading.CancellationToken]::None
 $scanResult = $scanner.Scan($scanOptions)
@@ -601,7 +601,7 @@ Note ('Totale elementi proposti dallo scanner reale: ' + $scanResult.Items.Count
 
 # 3b. La GUI sul vero %TEMP% deve riflettere lo stesso conteggio (delta rispetto al
 #     baseline della Fase 1), senza eseguire alcuna cancellazione.
-$proc2 = Start-CleanSlate $Exe ''
+$proc2 = Start-Nuvacline $Exe ''
 $mainWin2 = [System.Windows.Automation.AutomationElement]::FromHandle($proc2.MainWindowHandle)
 $statusEl2 = $null
 foreach ($e in (Get-Descendants $mainWin2)) {
@@ -648,7 +648,7 @@ Write-Host 'Fase 4) D/E: flusso GUI sul sandbox (analisi, conferma, annullamento
 $hashSbUnselectedMid = Get-FileHashAscii (Join-Path $sandbox 'unselected.txt')
 Check ($hashSbUnselectedMid -eq $hashSbUnselectedBefore) 'Il file "non selezionato" del sandbox e'' integro prima della pulizia'
 
-$proc3 = Start-CleanSlate $Exe $sandbox
+$proc3 = Start-Nuvacline $Exe $sandbox
 $mainWin3 = [System.Windows.Automation.AutomationElement]::FromHandle($proc3.MainWindowHandle)
 $statusEl3 = $null; $summaryId3 = $null
 foreach ($e in (Get-Descendants $mainWin3)) {
@@ -741,14 +741,14 @@ Check ($proc3.HasExited) 'Il processo GUI del sandbox e'' terminato alla fine de
 Write-Host ''
 Write-Host 'Fase 5) D/E/F: motore di produzione sul vero %TEMP%, con lista esplicita...'
 
-$pathResult = [CleanSlate.Core.TempPathProvider]::GetAuthorizedRoot()
+$pathResult = [Nuvacline.Core.TempPathProvider]::GetAuthorizedRoot()
 Check ($pathResult.Success) 'La radice autorizzata dell''applicazione e'' disponibile'
 Check ($pathResult.Root -eq ($realTemp + '\') -or $pathResult.Root.TrimEnd('\') -eq $realTemp) `
     ('La radice autorizzata corrisponde al vero %TEMP%: ' + $pathResult.Root)
 
 function New-FileItem([string]$path) {
     $fi = New-Object System.IO.FileInfo($path)
-    $item = New-Object CleanSlate.Core.FileItem
+    $item = New-Object Nuvacline.Core.FileItem
     $item.Name = [System.IO.Path]::GetFileName($path)
     $item.FullPath = $path
     $item.Length = $fi.Length
@@ -763,18 +763,18 @@ function New-FileItem([string]$path) {
 (Get-Item -LiteralPath $realModified).LastWriteTime = Get-Date
 Note '"modified.txt" toccato dopo la scansione (simula un file modificato dall''utente)'
 
-$items = New-Object System.Collections.Generic.List[CleanSlate.Core.FileItem]
+$items = New-Object System.Collections.Generic.List[Nuvacline.Core.FileItem]
 [void]$items.Add((New-FileItem $realSelected))    # deve essere eliminato
 [void]$items.Add((New-FileItem $realModified))    # troppo recente: saltato
 [void]$items.Add((New-FileItem $realLocked))      # bloccato: errore, sopravvive
 [void]$items.Add((New-FileItem $realSwapViaJunction))  # dietro la junction: saltato
 
-$cleanOptions = New-Object CleanSlate.Core.CleanOptions
+$cleanOptions = New-Object Nuvacline.Core.CleanOptions
 $cleanOptions.Root = $pathResult.Root
 $cleanOptions.Items = $items
 $cleanOptions.CancellationToken = [System.Threading.CancellationToken]::None
 
-$cleaner = New-Object CleanSlate.Core.TempFileCleaner
+$cleaner = New-Object Nuvacline.Core.TempFileCleaner
 $cleanResult = $cleaner.Clean($cleanOptions)
 
 Check ($cleanResult.Success) 'Il motore di produzione ha completato l''operazione'
@@ -782,34 +782,34 @@ Check ($cleanResult.Root.TrimEnd('\') -eq $realTemp) ('La radice usata dal motor
 
 $outcomes = @{}
 foreach ($r in $cleanResult.Items) { $outcomes[$r.Name] = $r.Outcome }
-Check ($outcomes['selected.txt'] -eq [CleanSlate.Core.CleanOutcome]::Deleted) 'Motore: "selected.txt" eliminato'
-Check ($outcomes['modified.txt'] -eq [CleanSlate.Core.CleanOutcome]::SkippedTooRecent) 'Motore: "modified.txt" saltato (modificato dopo la scansione)'
-Check ($outcomes['locked.txt'] -eq [CleanSlate.Core.CleanOutcome]::Failed) 'Motore: "locked.txt" fallito (file in uso), non eliminato'
-Check ($outcomes['swapfile.txt'] -eq [CleanSlate.Core.CleanOutcome]::SkippedReparse) 'Motore: "swapfile.txt" saltato (percorso sostituito da junction)'
+Check ($outcomes['selected.txt'] -eq [Nuvacline.Core.CleanOutcome]::Deleted) 'Motore: "selected.txt" eliminato'
+Check ($outcomes['modified.txt'] -eq [Nuvacline.Core.CleanOutcome]::SkippedTooRecent) 'Motore: "modified.txt" saltato (modificato dopo la scansione)'
+Check ($outcomes['locked.txt'] -eq [Nuvacline.Core.CleanOutcome]::Failed) 'Motore: "locked.txt" fallito (file in uso), non eliminato'
+Check ($outcomes['swapfile.txt'] -eq [Nuvacline.Core.CleanOutcome]::SkippedReparse) 'Motore: "swapfile.txt" saltato (percorso sostituito da junction)'
 Check ($cleanResult.DeletedCount -eq 1) ('Il motore dichiara 1 sola eliminazione: ' + $cleanResult.DeletedCount)
 Check ($cleanResult.ErrorCount -eq 1) ('Il motore dichiara 1 solo errore: ' + $cleanResult.ErrorCount)
 
 # Controlli negativi aggiuntivi sullo stesso motore, sempre sul vero %TEMP%.
-$itemsOutside = New-Object System.Collections.Generic.List[CleanSlate.Core.FileItem]
+$itemsOutside = New-Object System.Collections.Generic.List[Nuvacline.Core.FileItem]
 [void]$itemsOutside.Add((New-FileItem $victimOutside))
-$optsOutside = New-Object CleanSlate.Core.CleanOptions
+$optsOutside = New-Object Nuvacline.Core.CleanOptions
 $optsOutside.Root = $pathResult.Root
 $optsOutside.Items = $itemsOutside
 $outsideResult = $cleaner.Clean($optsOutside)
-Check ($outsideResult.Items[0].Outcome -eq [CleanSlate.Core.CleanOutcome]::SkippedOutsideRoot) `
+Check ($outsideResult.Items[0].Outcome -eq [Nuvacline.Core.CleanOutcome]::SkippedOutsideRoot) `
     'Motore: un file fuori dalla radice autorizzata viene rifiutato'
 Check ((Get-FileHashAscii $victimOutside) -eq $hashVictimBefore) 'Motore: la vittima fuori radice e'' ancora intatta'
 
-$itemsRoot = New-Object System.Collections.Generic.List[CleanSlate.Core.FileItem]
-$rootItem = New-Object CleanSlate.Core.FileItem
+$itemsRoot = New-Object System.Collections.Generic.List[Nuvacline.Core.FileItem]
+$rootItem = New-Object Nuvacline.Core.FileItem
 $rootItem.Name = [System.IO.Path]::GetFileName($realTemp.TrimEnd('\'))
 $rootItem.FullPath = $realTemp
 [void]$itemsRoot.Add($rootItem)
-$optsRoot = New-Object CleanSlate.Core.CleanOptions
+$optsRoot = New-Object Nuvacline.Core.CleanOptions
 $optsRoot.Root = $pathResult.Root
 $optsRoot.Items = $itemsRoot
 $rootResult = $cleaner.Clean($optsRoot)
-Check ($rootResult.Items[0].Outcome -eq [CleanSlate.Core.CleanOutcome]::SkippedRoot) 'Motore: la radice %TEMP% stessa viene rifiutata'
+Check ($rootResult.Items[0].Outcome -eq [Nuvacline.Core.CleanOutcome]::SkippedRoot) 'Motore: la radice %TEMP% stessa viene rifiutata'
 Check (Test-Path -LiteralPath $realQaDir) 'Motore: la cartella della fixture esiste ancora (nessuna cancellazione di directory)'
 
 # ================================================================== Fase 6 ====
@@ -849,7 +849,7 @@ function Remove-OwnResidue([string]$path) {
 }
 
 # Prima di cancellare si verifica nome, percorso e contenuto di ogni residuo.
-Check ($realQaDir.StartsWith(($realTemp + '\cleanslate-qa-'), [System.StringComparison]::OrdinalIgnoreCase)) `
+Check ($realQaDir.StartsWith(($realTemp + '\nuvacline-qa-'), [System.StringComparison]::OrdinalIgnoreCase)) `
     ('Prefisso del residuo nel vero %TEMP% verificato: ' + $realQaDir)
 
 $markerFiles = 0
@@ -875,9 +875,9 @@ Check (-not (Test-Path -LiteralPath $realQaDir)) 'Residui del vero %TEMP% rimoss
 Check (-not (Test-Path -LiteralPath $outsideDir)) 'Cartella esterna rimossa'
 Check (-not (Test-Path -LiteralPath $sandbox)) 'Sandbox rimossa'
 
-# Nessun altro "cleanslate-qa-*" deve essere rimasto dentro il vero %TEMP%.
-$leftoverQa = @(Get-ChildItem -LiteralPath $realTemp -Filter 'cleanslate-qa-*' -ErrorAction SilentlyContinue)
-Check ($leftoverQa.Count -eq 0) 'Nessun residuo "cleanslate-qa-*" nel vero %TEMP%'
+# Nessun altro "nuvacline-qa-*" deve essere rimasto dentro il vero %TEMP%.
+$leftoverQa = @(Get-ChildItem -LiteralPath $realTemp -Filter 'nuvacline-qa-*' -ErrorAction SilentlyContinue)
+Check ($leftoverQa.Count -eq 0) 'Nessun residuo "nuvacline-qa-*" nel vero %TEMP%'
 
 # Diff sullo snapshot: le uniche differenze ammissibili sono i nostri residui
 # (rimossi in Fase 7) e l'attivita' di altri processi del sistema, segnalata come
@@ -906,13 +906,13 @@ Check ($fixtureStillPresent.Count -eq 0) 'Nessun file della fixture compare anco
 $unexpectedGone = New-Object System.Collections.Generic.List[string]
 foreach ($p in $disappeared) {
     if ($knownFixturePaths -contains $p) { continue }
-    if ($p.IndexOf('cleanslate-qa-', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { continue }
+    if ($p.IndexOf('nuvacline-qa-', [System.StringComparison]::OrdinalIgnoreCase) -ge 0) { continue }
     [void]$unexpectedGone.Add($p)
 }
 
 if ($unexpectedGone.Count -gt 0) {
     Note ('File preesistenti scomparsi durante la finestra di prova per attivita'' di altri processi: ' +
-        $unexpectedGone.Count + ' (nessuno passato ai funzionamenti di cancellazione del test, che operano solo su percorsi con prefisso "cleanslate-qa-")')
+        $unexpectedGone.Count + ' (nessuno passato ai funzionamenti di cancellazione del test, che operano solo su percorsi con prefisso "nuvacline-qa-")')
 } else {
     Note 'Nessun file preesistenti del %TEMP% e'' scomparso durante la finestra di prova'
 }

@@ -2,6 +2,54 @@
 
 Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
+## [0.5.0] — 2026-10-15
+
+Rebranding completo da CleanSlate a Nuvacline e passaggio di licenza a GPL-3.0-or-later.
+
+### Aggiunto
+
+- **Licenza GPL-3.0-or-later**: il codice sorgente è ora concesso sotto la GNU General
+  Public License v3.0 or later. Il testo integrale si trova nel file `LICENSE` alla
+  root del repository. L'identificatore SPDX è `GPL-3.0-or-later`.
+- **Icona Nuvacline** (`assets/logo/Nuvacline.ico`): icona multi-risoluzione (16–256 px,
+  PNG embedded con trasparenza RGBA) generata dal logo scudo senza testo. Incorporata
+  nell'eseguibile con `/win32icon` e mostrata sia nel taskbar sia nella finestra
+  principale.
+- **Logo Nuvacline** (`assets/logo/Nuvacline.png`): versione orizzontale del nuovo logo.
+- **Sezione «Compatibilità Windows»** nel README: matrice che distingue le versioni
+  verificate manualmente dall'utente (Windows 11 25H2 e 26H2) da quelle con sola
+  analisi statica (Windows 10 22H2).
+
+### Cambiato
+
+- **Rebranding completo**: namespace `CleanSlate` → `Nuvacline`, nomi degli assembly,
+  stringhe di interfaccia, titolo della finestra, percorsi `%LOCALAPPDATA%`,
+  variabili d'ambiente dei test (`CLEANSLATE_SRC`/`CLEANSLATE_BIN` →
+  `NUVACLINE_SRC`/`NUVACLINE_BIN`), marcatori QA, script di build/test e
+  documentazione corrente.
+- **Nomi degli output di build**: `CleanSlate.exe` → `Nuvacline.exe`,
+  `CleanSlate.Tests.exe` → `Nuvacline.Tests.exe`.
+- **Percorso degli artefatti**: `artifacts/alpha-0.4.5/` → `artifacts/nuvacline-0.5.0/`.
+- **Percorso dei report**: `%LOCALAPPDATA%\CleanSlate\reports\` →
+  `%LOCALAPPDATA%\Nuvacline\reports\`.
+- **Chiave di registro**: `HKCU\Software\CleanSlate` → `HKCU\Software\Nuvacline`.
+- **Versione**: 0.4.5 → 0.5.0 (AssemblyVersion, AssemblyFileVersion,
+  AssemblyInformationalVersion, fallback in `AppInfo`).
+- **`qa-run.ps1`**: rimossi i percorsi assoluti hardcoded, ora usa `Split-Path` relativo.
+- **README, PRIVACY.md, SECURITY.md**: aggiornati alla versione 0.5.0 e al nuovo nome.
+- **Nota di rebranding** nel README aggiornata: la cartella fisica è ora `Nuvacline`.
+
+### Note
+
+- Nessuna modifica funzionale al motore di scansione, cancellazione o interfaccia
+  rispetto alla 0.4.5. La 0.5.0 è essenzialmente la 0.4.5 con il nuovo nome e licenza.
+- I documenti storici (`CHANGELOG.md` fino alla 0.4.5, `SPEC-0.4.0.md`, `TASKS.md`)
+  mantengono i riferimenti a CleanSlate perché descrivono versioni precedenti.
+- Gli asset grafici storici (`CleanSlate.ico`, `CleanSlate.png`,
+  `cleanslate_horizontal_light.png`, `cleanslate_mono_black.png`) sono conservati
+  in `assets/logo/` come record documentale.
+- La licenza GPL si applica al codice sorgente, non al logo né al nome marchio.
+
 ## [0.4.5] — 2026-10-14
 
 Riepilogo post-pulizia compatto nella finestra principale e dettagli completi in una

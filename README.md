@@ -1,8 +1,8 @@
-# CleanSlate 0.4.5
+# Nuvacline 0.5.0
 
-<img src="assets/logo/cleanslate_horizontal_light.png" width="420" alt="CleanSlate">
+<img src="assets/logo/Nuvacline.png" width="420" alt="Nuvacline">
 
-CleanSlate è un pulitore di file temporanei per Windows, **portatile, offline, in italiano**.
+Nuvacline è un pulitore di file temporanei per Windows, **portatile, offline, in italiano**.
 
 Analizza la cartella temporanea dell'utente corrente, mostra gli elementi recuperabili in una
 lista dove si sceglie cosa eliminare, chiede una **conferma esplicita** prima di cancellare e
@@ -17,7 +17,7 @@ che elenca il numero di candidate) e si apre la cartella dei report. L'interfacc
 **automaticamente il tema chiaro/scuro di Windows**, aggiornandosi anche al cambio di tema
 mentre il programma è aperto.
 
-CleanSlate **non promette di accelerare il computer**. Rimuove soltanto file temporanei
+Nuvacline **non promette di accelerare il computer**. Rimuove soltanto file temporanei
 dell'utente corrente che sono più vecchi di 24 ore (soglia configurabile da interfaccia:
 1 ora, 6 ore, 12 ore, 24 ore, 48 ore, 7 giorni oppure nessuna soglia; la scelta è
 persistita localmente e si applica sia all'analisi sia alla pulizia).
@@ -28,15 +28,37 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
 
 | Requisito | Dettaglio |
 |---|---|
-| Sistema | Windows 10 (build 1903+) o Windows 11, 64 bit |
+| Sistema | Windows 10 (build 1903+) o Windows 11, 64 bit — vedere «Compatibilità Windows» per lo stato delle verifiche |
 | Runtime | .NET Framework 4.8 o successivo (già presente in Windows 10/11) |
 | Privilegi | Nessuno: il manifest dichiara `asInvoker` |
 | Rete | Nessuna connessione necessaria o utilizzata |
-| Installazione | Nessuna: si avvia `CleanSlate.exe` e basta |
+| Installazione | Nessuna: si avvia `Nuvacline.exe` e basta |
+
+## Compatibilità Windows
+
+Stato delle verifiche di compatibilità dell'**applicazione** (distinto dal supporto di
+sicurezza del sistema operativo offerto da Microsoft):
+
+| Sistema operativo | Stato | Evidenza |
+|---|---|---|
+| Windows 11 25H2 | **Compatibilità verificata dall'utente** | Prova manuale dell'utente su installazione stabile (2026-10-14) |
+| Windows 11 26H2 | **Compatibilità verificata dall'utente** | Prova manuale dell'utente su installazione stabile (2026-10-14) |
+| Windows 10 22H2 | **Non ancora confermata da test pratici documentati** | Sola analisi statica dell'audit automatico (valutazione «LIKELY»); nessun test manuale documentato nel repository |
+| Windows 11 (audit automatico 2026-10-15) | Etichetta precedente «NOT TESTED» | Riferita esclusivamente all'ambiente di audit automatico (build Insider 29671), non alle prove manuali dell'utente successivamente comunicate |
+
+**Limiti della verifica.** La prova dell'utente conferma il funzionamento nelle
+configurazioni effettivamente provate, ma **non garantisce** tutte le configurazioni
+hardware, le policy aziendali o gli ambienti Windows modificati (endpoint management,
+AppLocker, Controlled Folder Access, ecc.).
+
+**Compatibilità ≠ supporto di sicurezza.** La compatibilità di Nuvacline con una versione
+di Windows è indipendente dal supporto di sicurezza che Microsoft offre (o ha cessato di
+offrire) per quella versione: usare Windows 10 22H2 dopo la fine del supporto di sicurezza
+espone a rischi che non riguardano Nuvacline ma il sistema operativo.
 
 ## Uso
 
-1. Avviare `CleanSlate.exe`.
+1. Avviare `Nuvacline.exe`.
 2. Premere **Analizza**: l'analisi è in sola lettura e non modifica nulla.
 3. Esaminare l'elenco, selezionare o deselezionare gli elementi desiderati.
 4. Premere **Pulisci selezionati** e confermare nella finestra di conferma.
@@ -68,7 +90,7 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
 2. **File recenti**: gli elementi modificati nelle ultime 24 ore sono scartati per impostazione
    predefinita. La soglia è configurabile dall'interfaccia (1 ora, 6 ore, 12 ore, 24 ore,
    48 ore, 7 giorni, nessuna soglia) e viene salvata in
-   `%LOCALAPPDATA%\CleanSlate\settings.txt`, dove viene conservata anche la preferenza
+   `%LOCALAPPDATA%\Nuvacline\settings.txt`, dove viene conservata anche la preferenza
    di salvataggio dei report (`KeepReports`) e quella di rimozione delle cartelle vuote
    (`RemoveEmptyFolders`, disattivata di default).
 3. **Cartelle vuote**: la rimozione delle cartelle diventate vuote è **opzionale e
@@ -98,32 +120,32 @@ persistita localmente e si applica sia all'analisi sia alla pulizia).
 ## Struttura del repository
 
 ```
-cleanslate/
+nuvacline/
 ├── build.ps1              build + test + pacchetto portable
 ├── build.common.ps1       funzioni di compilazione condivise
 ├── assets/
-│   └── logo/              logo ufficiale (CleanSlate.ico/png, varianti orizzontale e monocromatica)
+│   └── logo/              logo ufficiale (Nuvacline.ico/png, varianti orizzontale e monocromatica)
 ├── tests/
 │   ├── run-tests.ps1      compila ed esegue la suite di test
 │   └── verify.ps1         verifica end-to-end della GUI reale
 ├── src/
-│   ├── CleanSlate/        applicazione (Core, UI, Program, manifest)
-│   └── CleanSlate.Tests/  runner di test + 197 test
-├── artifacts/alpha-0.4.5/ pacchetto distribuibile
+│   ├── Nuvacline/        applicazione (Core, UI, Program, manifest)
+│   └── Nuvacline.Tests/  runner di test + 197 test
+├── artifacts/nuvacline-0.5.0/ pacchetto distribuibile
 ├── bin/                   output di build (non versionato)
 └── TASKS.md               checklist con stato reale e limiti
 ```
 
 ## Compilazione e test
 
-Tutti i comandi si eseguono dalla cartella `cleanslate` con PowerShell 5.1 e **non scaricano
+Tutti i comandi si eseguono dalla cartella `nuvacline` con PowerShell 5.1 e **non scaricano
 nulla**.
 
 ```powershell
 # compilazione Release + suite di test
 powershell -ExecutionPolicy Bypass -File build.ps1
 
-# compilazione + test + pacchetto portable in artifacts\alpha-0.4.5
+# compilazione + test + pacchetto portable in artifacts\nuvacline-0.5.0
 powershell -ExecutionPolicy Bypass -File build.ps1 -Package
 
 # solo la suite di test
@@ -142,12 +164,13 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Verifica end-to-end GUI (`verify.ps1`) | **41/41 controlli superati** sull'exe del pacchetto |
 | Probe GUI selezione massiva | Pulsanti visibili e funzionanti su 3108 file reali: deselezione → pulizia disabilitata, rieselezione → pulizia abilitata, etichetta conteggio/dimensione aggiornata |
 | Probe GUI soglia di scansione | Controllo visibile all'avvio con default 24 ore; caricamento da disco di `MinAgeHours=0` (nessuna soglia, 3165 proposti vs 3110 con 24 ore) e `MinAgeHours=1`; riepilogo sempre coerente con la soglia applicata; nessun residuo di processo o di impostazioni |
+| Compatibilità Windows (prove manuali utente) | **Windows 11 25H2 e 26H2**: compatibilità verificata dall'utente su installazioni stabili (2026-10-14); **Windows 10 22H2**: non ancora confermata da test pratici documentati — vedere «Compatibilità Windows» |
 | Rete (campionamento runtime) | **0 connessioni TCP in uscita** su almeno 40 campionamenti durante l'analisi reale |
 | Registro di sistema | Invariato prima/dopo l'esecuzione |
 | Servizi e attività pianificate | Invariati prima/dopo l'esecuzione |
 | Avvio automatico | Nessuna voce creata |
 | Processo residente | Nessuno dopo la chiusura della finestra |
-| Pacchetto | `artifacts\alpha-0.4.5\` con `CleanSlate.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
+| Pacchetto | `artifacts\nuvacline-0.5.0\` con `Nuvacline.exe`, `README.txt`, `LICENSE.txt`, `SHA256SUMS.txt` |
 | Dipendenze della build pubblicata | Solo assembly del framework .NET (`mscorlib`, `System`, `System.Core`, `System.Drawing`, `System.Windows.Forms`) |
 | Audit di sicurezza pre-distribuzione | Completato il 2026-10-09: 1 problema TOCTOU corretto, vedi `SECURITY.md` |
 
@@ -171,7 +194,7 @@ powershell -ExecutionPolicy Bypass -File tests\verify.ps1
 | Riepilogo post-pulizia compatto e finestra dettagli 0.4.5: conteggi effettivi, nessuna apertura automatica, pulsante che non ripete la pulizia, chiusura che conserva il riepilogo, liste vuote ed errori, pulizia parziale non presentata come successo, cartelle vuote OFF invariato, elenco completo esiti | `CleanupDetailsTests` |
 | Tema chiaro/scuro: rilevamento con seam, palette centralizzata (chiaro = colori di sistema, scuro = antracite fisso ad alto contrasto), applicazione/ripristino su `MainForm`, aggiornamento live `WM_THEMECHANGED`/`WM_SETTINGCHANGE`/`ImmersiveColorSet`, fallback chiaro su eccezione, nessun colore hardcoded fuori dalla palette, dialogo Informazioni, etichetta report | `ThemeTests` |
 
-I test usano un fixture autoconsistente in `%LOCALAPPDATA%\CleanSlateTests\<guid>\` (mai il
+I test usano un fixture autoconsistente in `%LOCALAPPDATA%\NuvaclineTests\<guid>\` (mai il
 reale temporaneo dell'utente) e lo rimuovono integralmente, ACL comprese.
 
 ## Sicurezza
@@ -188,20 +211,32 @@ Vedi [PRIVACY.md](PRIVACY.md).
 
 Vedi [CHANGELOG.md](CHANGELOG.md).
 
+## Note di rebranding
+
+Il progetto è stato rinominato da **CleanSlate** a **Nuvacline** a partire dalla
+versione 0.5.0: namespace, assembly, stringhe di interfaccia, percorsi
+`%LOCALAPPDATA%`, script di build/test, icone e documentazione corrente usano il
+nuovo nome. I documenti storici (`CHANGELOG.md`, `SPEC-0.4.0.md`, `TASKS.md`)
+mantengono intenzionalmente i riferimenti a CleanSlate perché descrivono lasciti
+passati. Gli asset grafici storici (`CleanSlate.ico`, `CleanSlate.png`) sono
+conservati in `assets/logo/` come record documentale; l'icona dell'applicazione e
+il logo principale sono le nuove varianti Nuvacline. La cartella fisica del
+repository è stata rinominata in `Nuvacline`.
+
 ## Licenza
 
-Il **codice sorgente** di CleanSlate è concesso sotto la
+Il **codice sorgente** di Nuvacline è concesso sotto la
 **GNU General Public License v3.0 or later (GPL-3.0-or-later)**.
 Il testo integrale e inalterato si trova nel file [LICENSE](LICENSE)
 alla root del repository. L'identificatore SPDX è `GPL-3.0-or-later`.
 
 - **Sorgente corrispondente**: ogni binario distribuito corrisponde al sorgente
   presente in questo repository (branch `master`). Per ottenere il sorgente di
-  una versione rilasciata usare il tag Git corrispondente (es. `v0.4.5`).
+  una versione rilasciata usare il tag Git corrispondente (es. `v0.5.0`).
 - **Dipendenze di terze parti**: nessuna. Il runtime .NET Framework 4.8 è un
-  componente Microsoft di Windows, non ridistribuito con CleanSlate.
+  componente Microsoft di Windows, non ridistribuito con Nuvacline.
 - **Marchio e nome**: la GPL non concede diritti di marchio. Il nome e il logo
-  CleanSlate non sono automaticamente utilizzabili per usi di marchio.
+  Nuvacline non sono automaticamente utilizzabili per usi di marchio.
 - **Logo**: gli asset in `assets/logo/` sono stati generati con strumenti di
   intelligenza artificiale. Non viene rivendicata una titolarità di copyright
   sull'immagine in quanto opera derivata; sarà sostituito in una versione
