@@ -1,5 +1,5 @@
 # Nuvacline 0.5.2
-<img src="assets/logo/Nuvacline.png" width="420" alt="Nuvacline">
+<picture><source media="(prefers-color-scheme: dark)" srcset="assets/logo/Nuvacline-dark.png"><img src="assets/logo/Nuvacline.png" width="420" alt="Nuvacline"></picture>
 
 Nuvacline è un pulitore di file temporanei per Windows, **portatile, offline, in italiano**.
 
