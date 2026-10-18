@@ -21,6 +21,12 @@ dell'utente corrente che sono più vecchi di 24 ore (soglia configurabile da int
 1 ora, 6 ore, 12 ore, 24 ore, 48 ore, 7 giorni oppure nessuna soglia; la scelta è
 persistita localmente e si applica sia all'analisi sia alla pulizia).
 
+## Disclaimer
+
+Il software viene fornito "così com'è", senza garanzie di alcun tipo. L'autore non è
+responsabile per eventuali perdite di dati, problemi di Windows o altri danni derivanti
+dall'uso del software. L'uso del programma è a proprio rischio e pericolo.
+
 ### Ambito della pulizia
 
 Nuvacline pulisce la cartella temporanea dell'utente Windows corrente, cioè la cartella

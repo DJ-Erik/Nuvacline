@@ -48,6 +48,13 @@ if ($Package) {
 Nuvacline 0.5.2
 ===============
 
+DISCLAIMER
+----------
+Il software e' fornito "cosi' com'e'", senza garanzie di alcun tipo.
+L'autore non e' responsabile per eventuali perdite di dati, problemi
+di Windows o altri danni derivanti dall'uso del software. L'uso del
+programma e' a proprio rischio e pericolo.
+
 COSA FA
 -------
 Nuvacline individua e rimuove i file temporanei dell'utente corrente
