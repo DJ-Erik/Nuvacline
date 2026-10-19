@@ -4,9 +4,17 @@ Formato aderente a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/).
 
 ## [0.5.2] - 2026-10-16
 
+### Aggiunto
+
+- **Disclaimer legale** nel README e nel README del pacchetto portabile: il software è fornito "così com'è", senza garanzie; l'autore non è responsabile per perdite di dati, problemi di Windows o altri danni derivanti dall'uso del software.
+
 ### Cambiato
 
-- **Versione**: 0.5.1 -> 0.5.2.
+- **Versione**: 0.5.1 → 0.5.2.
+
+### Corretto
+
+- **Copia negli appunti**: la prima scrittura della cronologia poteva non riuscire; ora viene ritentata con `Application.DoEvents()` e `Thread.Sleep(40)`, fino a 5 tentativi, per rendere la copia affidabile.
 
 ## [0.5.1] — 2026-10-16
 
